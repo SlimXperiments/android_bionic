@@ -12,7 +12,6 @@ libc_bionic_src_files_arm := \
 libc_common_src_files_arm += \
     bionic/index.cpp \
     bionic/memchr.c \
-    bionic/memmove.c.arm \
     bionic/memrchr.c \
     bionic/strchr.cpp \
     bionic/strnlen.c \
@@ -24,7 +23,6 @@ libc_common_src_files_arm += \
     upstream-freebsd/lib/libc/string/wcslen.c \
     upstream-freebsd/lib/libc/string/wcsrchr.c \
     upstream-freebsd/lib/libc/string/wmemcmp.c \
-    upstream-openbsd/lib/libc/string/bcopy.c \
     upstream-openbsd/lib/libc/string/strlcat.c \
     upstream-openbsd/lib/libc/string/strlcpy.c \
     upstream-openbsd/lib/libc/string/strncat.c \
@@ -70,7 +68,7 @@ ifeq ($(strip $(TARGET_$(my_2nd_arch_prefix)CPU_VARIANT)),)
 endif
 cpu_variant_mk := $(LOCAL_PATH)/arch-arm/$(TARGET_$(my_2nd_arch_prefix)CPU_VARIANT)/$(TARGET_$(my_2nd_arch_prefix)CPU_VARIANT).mk
 ifeq ($(wildcard $(cpu_variant_mk)),)
-$(error "TARGET_$(my_2nd_arch_prefix)CPU_VARIANT not set or set to an unknown value. Possible values are cortex-a7, cortex-a8, cortex-a9, cortex-a15, krait, denver. Use generic for devices that do not have a CPU similar to any of the supported cpu variants.")
+$(error "TARGET_$(my_2nd_arch_prefix)CPU_VARIANT not set or set to an unknown value. Possible values are cortex-a7, cortex-a8, cortex-a9, cortex-a15, krait, denver, scorpion. Use generic for devices that do not have a CPU similar to any of the supported cpu variants.")
 endif
 include $(cpu_variant_mk)
 libc_common_additional_dependencies += $(cpu_variant_mk)
