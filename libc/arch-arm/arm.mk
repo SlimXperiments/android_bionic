@@ -11,7 +11,6 @@ libc_bionic_src_files_arm := \
 
 libc_common_src_files_arm += \
     bionic/index.cpp \
-    bionic/memchr.c \
     bionic/memrchr.c \
     bionic/strchr.cpp \
     bionic/strnlen.c \
@@ -28,6 +27,11 @@ libc_common_src_files_arm += \
     upstream-openbsd/lib/libc/string/strncat.c \
     upstream-openbsd/lib/libc/string/strncmp.c \
     upstream-openbsd/lib/libc/string/strncpy.c \
+
+# cortex-a9 without neon
+ifneq ($(TARGET_CPU_VARIANT),tegra2)
+    libc_common_src_files_arm += bionic/memchr.c
+endif
 
 # The C++ fortify function implementations for which there is an
 # arm assembler version.
@@ -68,7 +72,7 @@ ifeq ($(strip $(TARGET_$(my_2nd_arch_prefix)CPU_VARIANT)),)
 endif
 cpu_variant_mk := $(LOCAL_PATH)/arch-arm/$(TARGET_$(my_2nd_arch_prefix)CPU_VARIANT)/$(TARGET_$(my_2nd_arch_prefix)CPU_VARIANT).mk
 ifeq ($(wildcard $(cpu_variant_mk)),)
-$(error "TARGET_$(my_2nd_arch_prefix)CPU_VARIANT not set or set to an unknown value. Possible values are cortex-a7, cortex-a8, cortex-a9, cortex-a15, krait, denver, scorpion. Use generic for devices that do not have a CPU similar to any of the supported cpu variants.")
+$(error "TARGET_$(my_2nd_arch_prefix)CPU_VARIANT not set or set to an unknown value. Possible values are cortex-a7, cortex-a8, cortex-a9, cortex-a15, krait, denver, scorpion, tegra2. Use generic for devices that do not have a CPU similar to any of the supported cpu variants.")
 endif
 include $(cpu_variant_mk)
 libc_common_additional_dependencies += $(cpu_variant_mk)
