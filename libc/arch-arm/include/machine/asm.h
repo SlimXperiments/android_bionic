@@ -56,4 +56,9 @@
 #define PIC_SYM(x,y) x
 #endif
 
+#define RET	bx	lr
+#define RETeq	bxeq	lr
+#define RETne	bxne	lr
+#define RETc(c) bx##c	lr
+
 #endif /* !_ARM_ASM_H_ */
