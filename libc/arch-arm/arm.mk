@@ -45,6 +45,10 @@ endif
 
 libc_common_cflags_arm := -DSOFTFLOAT
 
+ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
+  libc_common_cflags_arm += -DNEON_UNALIGNED_ACCESS -DNEON_MEMCPY_ALIGNMENT_DIVIDER=224
+endif
+
 ##########################################
 ### CPU specific source files
 libc_bionic_src_files_arm += \
