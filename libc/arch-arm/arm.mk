@@ -13,7 +13,6 @@ libc_common_src_files_arm += \
     bionic/index.cpp \
     bionic/memrchr.c \
     bionic/strchr.cpp \
-    bionic/strnlen.c \
     bionic/strrchr.cpp \
     upstream-freebsd/lib/libc/string/wcscat.c \
     upstream-freebsd/lib/libc/string/wcschr.c \
@@ -22,10 +21,7 @@ libc_common_src_files_arm += \
     upstream-freebsd/lib/libc/string/wcslen.c \
     upstream-freebsd/lib/libc/string/wcsrchr.c \
     upstream-freebsd/lib/libc/string/wmemcmp.c \
-    upstream-openbsd/lib/libc/string/strlcat.c \
     upstream-openbsd/lib/libc/string/strlcpy.c \
-    upstream-openbsd/lib/libc/string/strncat.c \
-    upstream-openbsd/lib/libc/string/strncmp.c \
     upstream-openbsd/lib/libc/string/strncpy.c \
 
 # cortex-a9 without neon

@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <machine/asm.h>
+#include <private/bionic_asm.h>
 
 /* LINTSTUB: char *strncat(char *, const char *, size_t) */
 ENTRY(strncat)
