@@ -62,6 +62,8 @@ libm_common_src_files += \
     upstream-freebsd/lib/msun/src/e_scalbf.c \
     upstream-freebsd/lib/msun/src/e_sinh.c \
     upstream-freebsd/lib/msun/src/e_sinhf.c \
+    upstream-freebsd/lib/msun/src/e_sqrt.c \
+    upstream-freebsd/lib/msun/src/e_sqrtf.c \
     upstream-freebsd/lib/msun/src/k_cos.c \
     upstream-freebsd/lib/msun/src/k_cosf.c \
     upstream-freebsd/lib/msun/src/k_exp.c \
@@ -91,6 +93,7 @@ libm_common_src_files += \
     upstream-freebsd/lib/msun/src/s_conjf.c \
     upstream-freebsd/lib/msun/src/s_copysign.c \
     upstream-freebsd/lib/msun/src/s_copysignf.c \
+    upstream-freebsd/lib/msun/src/s_cos.c \
     upstream-freebsd/lib/msun/src/s_cosf.c \
     upstream-freebsd/lib/msun/src/s_cproj.c \
     upstream-freebsd/lib/msun/src/s_cprojf.c \
@@ -160,6 +163,7 @@ libm_common_src_files += \
     upstream-freebsd/lib/msun/src/s_signgam.c \
     upstream-freebsd/lib/msun/src/s_significand.c \
     upstream-freebsd/lib/msun/src/s_significandf.c \
+    upstream-freebsd/lib/msun/src/s_sin.c \
     upstream-freebsd/lib/msun/src/s_sinf.c \
     upstream-freebsd/lib/msun/src/s_tan.c \
     upstream-freebsd/lib/msun/src/s_tanf.c \
@@ -250,32 +254,6 @@ LOCAL_SYSTEM_SHARED_LIBRARIES := libc
 # arch-specific settings
 LOCAL_C_INCLUDES_arm := $(LOCAL_PATH)/arm
 LOCAL_SRC_FILES_arm := arm/fenv.c
-
-ifeq ($(TARGET_CPU_VARIANT),krait)
-  LOCAL_SRC_FILES_arm += \
-	arm/e_pow.S	\
-	arm/s_cos.S	\
-	arm/s_sin.S	\
-	arm/e_sqrtf.S	\
-	arm/e_sqrt.S
-  LOCAL_CFLAGS_arm += -DKRAIT_NEON_OPTIMIZATION -fno-if-conversion
-else
-  ifeq ($(TARGET_USE_QCOM_BIONIC_OPTIMIZATION),true)
-    LOCAL_SRC_FILES_arm += \
-      arm/e_pow.S \
-      arm/s_cos.S \
-      arm/s_sin.S \
-      arm/e_sqrtf.S \
-      arm/e_sqrt.S
-    LOCAL_CFLAGS_arm += -DKRAIT_NEON_OPTIMIZATION -fno-if-conversion
-  else
-    libm_common_src_files += \
-      upstream-freebsd/lib/msun/src/s_cos.c \
-      upstream-freebsd/lib/msun/src/s_sin.c \
-      upstream-freebsd/lib/msun/src/e_sqrtf.c \
-      upstream-freebsd/lib/msun/src/e_sqrt.c
-    endif
-endif
 
 LOCAL_C_INCLUDES_arm64 := $(LOCAL_PATH)/arm64 $(libm_ld_includes)
 LOCAL_SRC_FILES_arm64 := arm64/fenv.c $(libm_ld_src_files)
