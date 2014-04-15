@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,10 +26,14 @@
  * SUCH DAMAGE.
  */
 
-#include <locale.h>
-#include <stdlib.h>
+#include <sys/socket.h>
 
-// setlocale(3) always fails on bionic.
-char* setlocale(int /*category*/, char const* /*locale*/) {
+cmsghdr* cmsg_nxthdr(msghdr* msg, cmsghdr* cmsg) {
+  cmsghdr* ptr;
+  ptr = reinterpret_cast<cmsghdr*>(reinterpret_cast<char*>(cmsg) + CMSG_ALIGN(cmsg->cmsg_len));
+  size_t len = reinterpret_cast<char*>(ptr+1) - reinterpret_cast<char*>(msg->msg_control);
+  if (len > msg->msg_controllen) {
     return NULL;
+  }
+  return ptr;
 }

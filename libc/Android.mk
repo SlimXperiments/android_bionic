@@ -71,7 +71,6 @@ libc_common_src_files := \
     bionic/sigsetmask.c \
     bionic/strntoimax.c \
     bionic/strntoumax.c \
-    bionic/strtotimeval.c \
     bionic/system_properties_compat.c \
     bionic/time64.c \
     bionic/unlockpt.c \
@@ -98,6 +97,8 @@ libc_common_src_files += \
     bionic/__memmove_chk.cpp \
     bionic/__read_chk.cpp \
     bionic/__recvfrom_chk.cpp \
+    bionic/__stpcpy_chk.cpp \
+    bionic/__stpncpy_chk.cpp \
     bionic/__strchr_chk.cpp \
     bionic/__strlcat_chk.cpp \
     bionic/__strlcpy_chk.cpp \
@@ -121,6 +122,7 @@ libc_bionic_src_files := \
     bionic/chown.cpp \
     bionic/clock.cpp \
     bionic/clone.cpp \
+    bionic/cmsg_nxthdr.cpp \
     bionic/dirent.cpp \
     bionic/dup2.cpp \
     bionic/epoll_create.cpp \
@@ -132,6 +134,7 @@ libc_bionic_src_files := \
     bionic/ffs.cpp \
     bionic/flockfile.cpp \
     bionic/fork.cpp \
+    bionic/fpclassify.cpp \
     bionic/futimens.cpp \
     bionic/getauxval.cpp \
     bionic/getcwd.cpp \
@@ -143,6 +146,7 @@ libc_bionic_src_files := \
     bionic/libc_logging.cpp \
     bionic/libgen.cpp \
     bionic/link.cpp \
+    bionic/locale.cpp \
     bionic/lstat.cpp \
     bionic/mkdir.cpp \
     bionic/mkfifo.cpp \
@@ -188,7 +192,6 @@ libc_bionic_src_files := \
     bionic/setegid.cpp \
     bionic/__set_errno.cpp \
     bionic/seteuid.cpp \
-    bionic/setlocale.cpp \
     bionic/setpgrp.cpp \
     bionic/sigaction.cpp \
     bionic/sigaddset.cpp \
@@ -385,6 +388,8 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/stdlib/strtoull.c \
     upstream-openbsd/lib/libc/stdlib/strtoumax.c \
     upstream-openbsd/lib/libc/stdlib/system.c \
+    upstream-openbsd/lib/libc/string/stpcpy.c \
+    upstream-openbsd/lib/libc/string/stpncpy.c \
     upstream-openbsd/lib/libc/string/strcasecmp.c \
     upstream-openbsd/lib/libc/string/strcspn.c \
     upstream-openbsd/lib/libc/string/strdup.c \
@@ -545,7 +550,7 @@ LOCAL_SRC_FILES := $(libc_upstream_freebsd_src_files)
 LOCAL_CFLAGS := \
     $(libc_common_cflags) \
     -I$(LOCAL_PATH)/upstream-freebsd \
-    -I$(LOCAL_PATH)/upstream-freebsd/libc/include \
+    -I$(LOCAL_PATH)/upstream-freebsd/lib/libc/include \
     -include upstream-freebsd/freebsd-compat.h
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,30 +26,11 @@
  * SUCH DAMAGE.
  */
 
-#undef _FORTIFY_SOURCE
+#ifndef _XLOCALE_H_
+#define _XLOCALE_H_
 
-#include <string.h>
-#include <stdlib.h>
-#include "private/libc_logging.h"
+/* If we just use void* here, GCC exposes that in error messages. */
+struct __locale_t;
+typedef struct __locale_t* locale_t;
 
-/*
- * Runtime implementation of __builtin____strcpy_chk.
- *
- * See
- *   http://gcc.gnu.org/onlinedocs/gcc/Object-Size-Checking.html
- *   http://gcc.gnu.org/ml/gcc-patches/2004-09/msg02055.html
- * for details.
- *
- * This strcpy check is called if _FORTIFY_SOURCE is defined and
- * greater than 0.
- */
-extern "C" char* __strcpy_chk(char* dest, const char* src, size_t dest_len) {
-  // TODO: optimize so we don't scan src twice.
-  size_t src_len = strlen(src) + 1;
-  if (__predict_false(src_len > dest_len)) {
-    __fortify_chk_fail("strcpy: prevented write past end of buffer",
-                       BIONIC_EVENT_STRCPY_BUFFER_OVERFLOW);
-  }
-
-  return strcpy(dest, src);
-}
+#endif /* _XLOCALE_H_ */

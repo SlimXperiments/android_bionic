@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,34 +25,31 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include <ctype.h>
-#include <inttypes.h>
+
+#undef _FORTIFY_SOURCE
+
+#include <string.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include "private/libc_logging.h"
 
-char * strtotimeval(const char *str, struct timeval *ts) {
-  char *s;
-  long fs = 0; /* fractional seconds */
-
-  ts->tv_sec = strtoumax(str, &s, 10);
-
-  if (*s == '.') {
-    s++;
-    int count = 0;
-
-    /* read up to 6 digits (microseconds) */
-    while (*s && isdigit(*s)) {
-      if (++count < 7) {
-        fs = fs*10 + (*s - '0');
-      }
-      s++;
-    }
-
-    for (; count < 6; count++) {
-      fs *= 10;
-    }
+/*
+ * Runtime implementation of __builtin____stpcpy_chk.
+ *
+ * See
+ *   http://gcc.gnu.org/onlinedocs/gcc/Object-Size-Checking.html
+ *   http://gcc.gnu.org/ml/gcc-patches/2004-09/msg02055.html
+ * for details.
+ *
+ * This stpcpy check is called if _FORTIFY_SOURCE is defined and
+ * greater than 0.
+ */
+extern "C" char* __stpcpy_chk(char* dest, const char* src, size_t dest_len) {
+  // TODO: optimize so we don't scan src twice.
+  size_t src_len = strlen(src) + 1;
+  if (__predict_false(src_len > dest_len)) {
+    __fortify_chk_fail("stpcpy: prevented write past end of buffer",
+                       BIONIC_EVENT_STPCPY_BUFFER_OVERFLOW);
   }
 
-  ts->tv_usec = fs;
-  return s;
+  return stpcpy(dest, src);
 }

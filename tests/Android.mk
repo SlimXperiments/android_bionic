@@ -67,6 +67,7 @@ libBionicStandardTests_src_files := \
     string_test.cpp \
     strings_test.cpp \
     stubs_test.cpp \
+    sstream_test.cpp \
     sys_epoll_test.cpp \
     sys_mman_test.cpp \
     sys_resource_test.cpp \
@@ -82,6 +83,7 @@ libBionicStandardTests_src_files := \
     system_properties_test.cpp \
     time_test.cpp \
     unistd_test.cpp \
+    wchar_test.cpp \
 
 libBionicStandardTests_cflags := \
     $(test_cflags) \

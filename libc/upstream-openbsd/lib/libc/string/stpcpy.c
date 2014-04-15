@@ -1,5 +1,7 @@
-/*-
- * Copyright (c) 2004 David Schultz <das@FreeBSD.ORG>
+/*	$OpenBSD: stpcpy.c,v 1.1 2012/01/17 02:48:01 guenther Exp $	*/
+
+/*
+ * Copyright (c) 1988 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,11 +12,14 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -22,47 +27,18 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * $FreeBSD$
  */
 
-#include <math.h>
-#include <sys/cdefs.h>
-#include "fpmath.h"
+#include <string.h>
 
-/*
- * XXX These routines belong in libm, but they must remain in libc for
- *     binary compat until we can bump libm's major version number.
- */
-
-int
-__isinf(double d)
-{
-	union IEEEd2bits u;
-
-	u.d = d;
-	return (u.bits.exp == 2047 && u.bits.manl == 0 && u.bits.manh == 0);
-}
-
-int
-__isinff(float f)
-{
-	union IEEEf2bits u;
-
-	u.f = f;
-	return (u.bits.exp == 255 && u.bits.man == 0);
-}
-
-int
-__isinfl(long double e)
-{
-	union IEEEl2bits u;
-
-	u.e = e;
-	mask_nbit_l(u);
-#ifndef __alpha__
-	return (u.bits.exp == 32767 && u.bits.manl == 0 && u.bits.manh == 0);
-#else
-	return (u.bits.exp == 2047 && u.bits.manl == 0 && u.bits.manh == 0);
+#if defined(APIWARN)
+__warn_references(stpcpy,
+    "warning: stpcpy() is dangerous GNU crap; don't use it");
 #endif
+
+char *
+stpcpy(char *to, const char *from)
+{
+	for (; (*to = *from) != '\0'; ++from, ++to);
+	return(to);
 }

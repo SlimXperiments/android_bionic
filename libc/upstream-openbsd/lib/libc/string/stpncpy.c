@@ -1,6 +1,11 @@
+/*	$OpenBSD: stpncpy.c,v 1.2 2012/07/11 10:44:59 naddy Exp $	*/
+
 /*-
- * Copyright (c) 2004 David Schultz <das@FreeBSD.ORG>
+ * Copyright (c) 1990 The Regents of the University of California.
  * All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -10,11 +15,14 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -22,44 +30,27 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * $FreeBSD$
  */
 
-#include <math.h>
+#include <string.h>
 
-#include "fpmath.h"
-
-/* Provided by libc.so */
-#ifndef PIC
-#undef isnan
-int
-isnan(double d)
+char *
+stpncpy(char *dst, const char *src, size_t n)
 {
-	union IEEEd2bits u;
+	if (n != 0) {
+		char *d = dst;
+		const char *s = src;
 
-	u.d = d;
-	return (u.bits.exp == 2047 && (u.bits.manl != 0 || u.bits.manh != 0));
+		dst = &dst[n];
+		do {
+			if ((*d++ = *s++) == 0) {
+				dst = d - 1;
+				/* NUL pad the remaining n-1 bytes */
+				while (--n != 0)
+					*d++ = 0;
+				break;
+			}
+		} while (--n != 0);
+	}
+	return (dst);
 }
-#endif /* !PIC */
-
-int
-__isnanf(float f)
-{
-	union IEEEf2bits u;
-
-	u.f = f;
-	return (u.bits.exp == 255 && u.bits.man != 0);
-}
-
-int
-__isnanl(long double e)
-{
-	union IEEEl2bits u;
-
-	u.e = e;
-	mask_nbit_l(u);
-	return (u.bits.exp == 32767 && (u.bits.manl != 0 || u.bits.manh != 0));
-}
-
-__weak_reference(__isnanf, isnanf);
