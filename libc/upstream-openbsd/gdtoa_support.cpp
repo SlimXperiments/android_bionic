@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef _BIONIC_OPENBSD_COMPAT_H_included
-#define _BIONIC_OPENBSD_COMPAT_H_included
+#include <pthread.h>
 
-#define _GNU_SOURCE
-#define __USE_BSD
-
-/* OpenBSD's <ctype.h> uses these names, which conflicted with stlport.
- * Additionally, we changed the numeric/digit type from N to D for libcxx.
- */
-#define _U _CTYPE_U
-#define _L _CTYPE_L
-#define _N _CTYPE_D
-#define _S _CTYPE_S
-#define _P _CTYPE_P
-#define _C _CTYPE_C
-#define _X _CTYPE_X
-#define _B _CTYPE_B
-
-#endif
+__LIBC_HIDDEN__ pthread_mutex_t __dtoa_locks[] = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER };

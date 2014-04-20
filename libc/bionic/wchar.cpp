@@ -97,6 +97,7 @@ int swscanf(const wchar_t* /*s*/, const wchar_t* /*format*/, ... ) {
 
 int iswalnum(wint_t wc) { return isalnum(wc); }
 int iswalpha(wint_t wc) { return isalpha(wc); }
+int iswblank(wint_t wc) { return isblank(wc); }
 int iswcntrl(wint_t wc) { return iscntrl(wc); }
 int iswdigit(wint_t wc) { return isdigit(wc); }
 int iswgraph(wint_t wc) { return isgraph(wc); }
@@ -242,21 +243,45 @@ size_t wcsftime(wchar_t* wcs, size_t maxsize, const wchar_t* format,  const stru
   return strftime(reinterpret_cast<char*>(wcs), maxsize, reinterpret_cast<const char*>(format), timptr);
 }
 
-size_t wcsrtombs(char* dst, const wchar_t** src, size_t len, mbstate_t* /*ps*/) {
-  const char* s = reinterpret_cast<const char*>(*src);
-  const char* s2 = reinterpret_cast<const char*>(memchr(s, 0, len));
-  if (s2 != NULL) {
-    len = (s2 - s)+1;
+size_t wcsrtombs(char* dst, const wchar_t** src, size_t n, mbstate_t* /*ps*/) {
+  size_t i = 0; // Number of input characters read.
+  size_t o = 0; // Number of output bytes written.
+  for (; (*src)[i] != 0; ++i) {
+    // TODO: UTF-8 support.
+    if ((*src)[i] > 0x7f) {
+      errno = EILSEQ;
+      if (dst != NULL) {
+        *src = &(*src)[i];
+      }
+      return static_cast<size_t>(-1);
+    }
+    if (dst != NULL) {
+      if (o + 1 > n) {
+        break;
+      }
+      dst[o++] = static_cast<char>((*src)[i]);
+    } else {
+      ++o;
+    }
   }
+  // If we consumed all the input, terminate the output.
+  if (dst != NULL && o < n) {
+    dst[o] = 0;
+  }
+  // If we were actually consuming input, record how far we got.
   if (dst != NULL) {
-    memcpy( dst, s, len );
+    if ((*src)[i] != 0) {
+      *src = &(*src)[i]; // This is where the next call should pick up.
+    } else {
+      *src = NULL; // We consumed everything.
+    }
   }
-  *src = (wchar_t*)(s + len);
-  return len;
+  return o;
 }
 
 size_t wcstombs(char* dst, const wchar_t* src, size_t len) {
-  return wcsrtombs(dst, &src, len, NULL);
+  const wchar_t* p = src;
+  return wcsrtombs(dst, &p, len, NULL);
 }
 
 double wcstod(const wchar_t* nptr, wchar_t** endptr) {

@@ -75,11 +75,8 @@ libc_common_src_files := \
     bionic/time64.c \
     bionic/unlockpt.c \
     stdio/findfp.c \
-    stdio/fread.c \
-    stdio/fvwrite.c \
     stdio/snprintf.c\
     stdio/sprintf.c \
-    stdio/vfprintf.c \
     stdlib/atexit.c \
     stdlib/ctype_.c \
     stdlib/_Exit.c \
@@ -87,7 +84,6 @@ libc_common_src_files := \
     stdlib/putenv.c \
     stdlib/quick_exit.c \
     stdlib/setenv.c \
-    stdlib/strtod.c \
     unistd/syslog.c \
 
 # Fortify implementations of libc functions.
@@ -210,7 +206,6 @@ libc_bionic_src_files := \
     bionic/strerror.cpp \
     bionic/strerror_r.cpp \
     bionic/strsignal.cpp \
-    bionic/strtof.cpp \
     bionic/strtold.cpp \
     bionic/stubs.cpp \
     bionic/symlink.cpp \
@@ -313,12 +308,41 @@ libc_upstream_netbsd_src_files := \
     upstream-netbsd/lib/libc/thread-stub/__isthreaded.c \
     upstream-netbsd/lib/libc/unistd/killpg.c \
 
+libc_upstream_openbsd_gdtoa_src_files := \
+    upstream-openbsd/gdtoa_support.cpp \
+    upstream-openbsd/lib/libc/gdtoa/dmisc.c \
+    upstream-openbsd/lib/libc/gdtoa/dtoa.c \
+    upstream-openbsd/lib/libc/gdtoa/gdtoa.c \
+    upstream-openbsd/lib/libc/gdtoa/gethex.c \
+    upstream-openbsd/lib/libc/gdtoa/gmisc.c \
+    upstream-openbsd/lib/libc/gdtoa/hd_init.c \
+    upstream-openbsd/lib/libc/gdtoa/hdtoa.c \
+    upstream-openbsd/lib/libc/gdtoa/hexnan.c \
+    upstream-openbsd/lib/libc/gdtoa/ldtoa.c \
+    upstream-openbsd/lib/libc/gdtoa/misc.c \
+    upstream-openbsd/lib/libc/gdtoa/smisc.c \
+    upstream-openbsd/lib/libc/gdtoa/strtod.c \
+    upstream-openbsd/lib/libc/gdtoa/strtodg.c \
+    upstream-openbsd/lib/libc/gdtoa/strtof.c \
+    upstream-openbsd/lib/libc/gdtoa/strtord.c \
+    upstream-openbsd/lib/libc/gdtoa/sum.c \
+    upstream-openbsd/lib/libc/gdtoa/ulp.c \
+
+libc_upstream_openbsd_gdtoa_src_files_32 := \
+    $(libc_upstream_openbsd_gdtoa_src_files) \
+
+libc_upstream_openbsd_gdtoa_src_files_64 := \
+    $(libc_upstream_openbsd_gdtoa_src_files) \
+    upstream-openbsd/lib/libc/gdtoa/strtorQ.c \
+
 libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/gen/alarm.c \
+    upstream-openbsd/lib/libc/gen/ctype_.c \
     upstream-openbsd/lib/libc/gen/exec.c \
     upstream-openbsd/lib/libc/gen/fnmatch.c \
     upstream-openbsd/lib/libc/gen/ftok.c \
     upstream-openbsd/lib/libc/gen/getprogname.c \
+    upstream-openbsd/lib/libc/gen/isctype.c \
     upstream-openbsd/lib/libc/gen/setprogname.c \
     upstream-openbsd/lib/libc/gen/time.c \
     upstream-openbsd/lib/libc/gen/tolower_.c \
@@ -340,12 +364,14 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/stdio/fpurge.c \
     upstream-openbsd/lib/libc/stdio/fputc.c \
     upstream-openbsd/lib/libc/stdio/fputs.c \
+    upstream-openbsd/lib/libc/stdio/fread.c \
     upstream-openbsd/lib/libc/stdio/freopen.c \
     upstream-openbsd/lib/libc/stdio/fscanf.c \
     upstream-openbsd/lib/libc/stdio/fseek.c \
     upstream-openbsd/lib/libc/stdio/fsetpos.c \
     upstream-openbsd/lib/libc/stdio/ftell.c \
     upstream-openbsd/lib/libc/stdio/funopen.c \
+    upstream-openbsd/lib/libc/stdio/fvwrite.c \
     upstream-openbsd/lib/libc/stdio/fwalk.c \
     upstream-openbsd/lib/libc/stdio/getc.c \
     upstream-openbsd/lib/libc/stdio/getchar.c \
@@ -371,6 +397,7 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/stdio/tmpnam.c \
     upstream-openbsd/lib/libc/stdio/ungetc.c \
     upstream-openbsd/lib/libc/stdio/vasprintf.c \
+    upstream-openbsd/lib/libc/stdio/vfprintf.c \
     upstream-openbsd/lib/libc/stdio/vfscanf.c \
     upstream-openbsd/lib/libc/stdio/vprintf.c \
     upstream-openbsd/lib/libc/stdio/vscanf.c \
@@ -617,6 +644,34 @@ include $(BUILD_STATIC_LIBRARY)
 
 
 # ========================================================
+# libc_gdtoa.a - upstream OpenBSD C library gdtoa code
+# ========================================================
+#
+# These files are built with the openbsd-compat.h header file
+# automatically included.
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES_32 := $(libc_upstream_openbsd_gdtoa_src_files_32)
+LOCAL_SRC_FILES_64 := $(libc_upstream_openbsd_gdtoa_src_files_64)
+LOCAL_CFLAGS := \
+    $(libc_common_cflags) \
+    -I$(LOCAL_PATH)/upstream-openbsd \
+    -I$(LOCAL_PATH)/upstream-openbsd/lib/libc/include \
+    -include upstream-openbsd/openbsd-compat.h \
+
+LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
+LOCAL_CPPFLAGS := $(libc_common_cppflags)
+LOCAL_C_INCLUDES := $(libc_common_c_includes)
+LOCAL_MODULE := libc_gdtoa
+LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
+LOCAL_SYSTEM_SHARED_LIBRARIES :=
+
+$(eval $(call patch-up-arch-specific-flags,LOCAL_CFLAGS,libc_common_cflags))
+include $(BUILD_STATIC_LIBRARY)
+
+
+# ========================================================
 # libc_bionic.a - home-grown C library code
 # ========================================================
 
@@ -678,6 +733,7 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libc_bionic \
     libc_dns \
     libc_freebsd \
+    libc_gdtoa \
     libc_netbsd \
     libc_openbsd \
     libc_stack_protector \
@@ -775,7 +831,7 @@ LOCAL_SRC_FILES := \
     bionic/pthread_debug.cpp \
     bionic/libc_init_dynamic.cpp \
 
-LOCAL_MODULE:= libc
+LOCAL_MODULE := libc
 LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
 LOCAL_REQUIRED_MODULES := tzdata
 
@@ -788,7 +844,7 @@ LOCAL_STRIP_MODULE := keep_symbols
 # ensures that symbols that are pulled into those new libraries from libgcc.a are not declared
 # external; if that were the case, then libc would not pull those symbols from libgcc.a as it
 # should, instead relying on the external symbols from the dependent libraries.  That would
-# create an "cloaked" dependency on libgcc.a in libc though the libraries, which is not what
+# create a "cloaked" dependency on libgcc.a in libc though the libraries, which is not what
 # you wanted!
 
 LOCAL_SHARED_LIBRARIES := libdl
@@ -836,7 +892,7 @@ LOCAL_SRC_FILES := \
     bionic/malloc_debug_leak.cpp \
     bionic/malloc_debug_check.cpp \
 
-LOCAL_MODULE:= libc_malloc_debug_leak
+LOCAL_MODULE := libc_malloc_debug_leak
 LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
 
 LOCAL_SHARED_LIBRARIES := libc libdl
@@ -867,7 +923,7 @@ LOCAL_C_INCLUDES := $(libc_common_c_includes)
 LOCAL_SRC_FILES := \
     bionic/malloc_debug_qemu.cpp
 
-LOCAL_MODULE:= libc_malloc_debug_qemu
+LOCAL_MODULE := libc_malloc_debug_qemu
 LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
 
 LOCAL_SHARED_LIBRARIES := libc libdl

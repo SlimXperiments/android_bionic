@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <wchar.h>
 
 TEST(stdio, tmpfile_fileno_fprintf_rewind_fgets) {
   FILE* fp = tmpfile();
@@ -192,18 +193,38 @@ TEST(stdio, printf_ssize_t) {
   snprintf(buf, sizeof(buf), "%zd", v);
 }
 
-TEST(stdio, snprintf_n_format_specifier_not_implemented) {
-#if defined(__BIONIC__)
+// https://code.google.com/p/android/issues/detail?id=64886
+TEST(stdio, snprintf_a) {
+  char buf[BUFSIZ];
+  EXPECT_EQ(23, snprintf(buf, sizeof(buf), "<%a>", 9990.235));
+  EXPECT_STREQ("<0x1.3831e147ae148p+13>", buf);
+}
+
+TEST(stdio, snprintf_lc) {
+  char buf[BUFSIZ];
+  wint_t wc = L'a';
+  EXPECT_EQ(3, snprintf(buf, sizeof(buf), "<%lc>", wc));
+  EXPECT_STREQ("<a>", buf);
+}
+
+TEST(stdio, snprintf_ls) {
+  char buf[BUFSIZ];
+  wchar_t* ws = NULL;
+  EXPECT_EQ(8, snprintf(buf, sizeof(buf), "<%ls>", ws));
+  EXPECT_STREQ("<(null)>", buf);
+
+  wchar_t chars[] = { L'h', L'i', 0 };
+  ws = chars;
+  EXPECT_EQ(4, snprintf(buf, sizeof(buf), "<%ls>", ws));
+  EXPECT_STREQ("<hi>", buf);
+}
+
+TEST(stdio, snprintf_n) {
   char buf[32];
   int i = 0;
-  // We deliberately don't implement %n, so it's treated like
-  // any other unrecognized format specifier.
-  EXPECT_EQ(5, snprintf(buf, sizeof(buf), "a %n b", &i));
-  EXPECT_EQ(0, i);
-  EXPECT_STREQ("a n b", buf);
-#else // __BIONIC__
-  GTEST_LOG_(INFO) << "This test does nothing.\n";
-#endif // __BIONIC__
+  EXPECT_EQ(4, snprintf(buf, sizeof(buf), "a %n b", &i));
+  EXPECT_EQ(2, i);
+  EXPECT_STREQ("a  b", buf);
 }
 
 TEST(stdio, snprintf_smoke) {
@@ -306,19 +327,19 @@ TEST(stdio, snprintf_smoke) {
 TEST(stdio, snprintf_f_special) {
   char buf[BUFSIZ];
   snprintf(buf, sizeof(buf), "%f", nanf(""));
-  EXPECT_STREQ("NaN", buf);
+  EXPECT_STRCASEEQ("NaN", buf);
 
   snprintf(buf, sizeof(buf), "%f", HUGE_VALF);
-  EXPECT_STREQ("Inf", buf);
+  EXPECT_STRCASEEQ("Inf", buf);
 }
 
 TEST(stdio, snprintf_g_special) {
   char buf[BUFSIZ];
   snprintf(buf, sizeof(buf), "%g", nan(""));
-  EXPECT_STREQ("NaN", buf);
+  EXPECT_STRCASEEQ("NaN", buf);
 
   snprintf(buf, sizeof(buf), "%g", HUGE_VAL);
-  EXPECT_STREQ("Inf", buf);
+  EXPECT_STRCASEEQ("Inf", buf);
 }
 
 TEST(stdio, snprintf_d_INT_MAX) {
@@ -363,6 +384,16 @@ TEST(stdio, snprintf_lld_LLONG_MIN) {
   char buf[BUFSIZ];
   snprintf(buf, sizeof(buf), "%lld", LLONG_MIN);
   EXPECT_STREQ("-9223372036854775808", buf);
+}
+
+TEST(stdio, snprintf_e) {
+  char buf[BUFSIZ];
+
+  snprintf(buf, sizeof(buf), "%e", 1.5);
+  EXPECT_STREQ("1.500000e+00", buf);
+
+  snprintf(buf, sizeof(buf), "%Le", 1.5l);
+  EXPECT_STREQ("1.500000e+00", buf);
 }
 
 TEST(stdio, popen) {

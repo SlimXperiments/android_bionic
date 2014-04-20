@@ -1,6 +1,4 @@
-/*	$OpenBSD: ctype.h,v 1.19 2005/12/13 00:35:22 millert Exp $	*/
-/*	$NetBSD: ctype.h,v 1.14 1994/10/26 00:55:47 cgd Exp $	*/
-
+/*	$OpenBSD: isctype.c,v 1.11 2005/08/08 08:05:34 espie Exp $ */
 /*
  * Copyright (c) 1989 The Regents of the University of California.
  * All rights reserved.
@@ -33,61 +31,120 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)ctype.h	5.3 (Berkeley) 4/3/91
  */
 
-#ifndef _CTYPE_H_
-#define _CTYPE_H_
+#define _ANSI_LIBRARY
+#include <ctype.h>
+#include <stdio.h>
 
-#include <sys/cdefs.h>
+#undef isalnum
+int
+isalnum(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & (_U|_L|_N)));
+}
 
-#define	_CTYPE_U	0x01
-#define	_CTYPE_L	0x02
-#define	_CTYPE_D	0x04
-#define	_CTYPE_S	0x08
-#define	_CTYPE_P	0x10
-#define	_CTYPE_C	0x20
-#define	_CTYPE_X	0x40
-#define	_CTYPE_B	0x80
-#define	_CTYPE_R	(_CTYPE_P|_CTYPE_U|_CTYPE_L|_CTYPE_D|_CTYPE_B)
-#define	_CTYPE_A	(_CTYPE_L|_CTYPE_U)
+#undef isalpha
+int
+isalpha(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & (_U|_L)));
+}
 
-__BEGIN_DECLS
+#undef isblank
+int
+isblank(int c)
+{
+	return (c == ' ' || c == '\t');
+}
 
-extern const char	*_ctype_;
-extern const short	*_tolower_tab_;
-extern const short	*_toupper_tab_;
+#undef iscntrl
+int
+iscntrl(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & _C));
+}
 
-#if defined(__GNUC__) || defined(_ANSI_LIBRARY) || defined(lint)
-int	isalnum(int);
-int	isalpha(int);
-int	iscntrl(int);
-int	isdigit(int);
-int	isgraph(int);
-int	islower(int);
-int	isprint(int);
-int	ispunct(int);
-int	isspace(int);
-int	isupper(int);
-int	isxdigit(int);
-int	tolower(int);
-int	toupper(int);
+#undef isdigit
+int
+isdigit(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & _N));
+}
 
-#if __BSD_VISIBLE || __ISO_C_VISIBLE >= 1999 || __POSIX_VISIBLE > 200112 \
-    || __XPG_VISIBLE > 600
-int	isblank(int);
-#endif
+#undef isgraph
+int
+isgraph(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & (_P|_U|_L|_N)));
+}
 
-#if __BSD_VISIBLE || __XPG_VISIBLE
-int	isascii(int);
-int	toascii(int);
-int	_tolower(int);
-int	_toupper(int);
-#endif /* __BSD_VISIBLE || __XPG_VISIBLE */
+#undef islower
+int
+islower(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & _L));
+}
 
-#endif /* __GNUC__ || _ANSI_LIBRARY || lint */
+#undef isprint
+int
+isprint(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & (_P|_U|_L|_N|_B)));
+}
 
-__END_DECLS
+#undef ispunct
+int
+ispunct(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & _P));
+}
 
-#endif /* !_CTYPE_H_ */
+#undef isspace
+int
+isspace(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & _S));
+}
+
+#undef isupper
+int
+isupper(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & _U));
+}
+
+#undef isxdigit
+int
+isxdigit(int c)
+{
+	return (c == EOF ? 0 : ((_ctype_ + 1)[(unsigned char)c] & (_N|_X)));
+}
+
+#undef isascii
+int
+isascii(int c)
+{
+	return ((unsigned int)c <= 0177);
+}
+
+#undef toascii
+int
+toascii(int c)
+{
+	return (c & 0177);
+}
+
+#undef _toupper
+int
+_toupper(int c)
+{
+	return (c - 'a' + 'A');
+}
+
+#undef _tolower
+int
+_tolower(int c)
+{
+	return (c - 'A' + 'a');
+}

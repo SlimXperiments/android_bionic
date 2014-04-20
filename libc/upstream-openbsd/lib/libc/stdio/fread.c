@@ -1,5 +1,4 @@
-/*	$OpenBSD: floatio.h,v 1.3 2003/06/02 20:18:37 millert Exp $	*/
-
+/*	$OpenBSD: fread.c,v 1.11 2009/11/21 09:53:44 guenther Exp $ */
 /*-
  * Copyright (c) 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -32,11 +31,44 @@
  * SUCH DAMAGE.
  */
 
-/*
- * Floating point scanf/printf (input/output) definitions.
- */
+#include <stdio.h>
+#include <string.h>
+#include "local.h"
 
-/* 11-bit exponent (VAX G floating point) is 308 decimal digits */
-#define	MAXEXP		308
-/* 128 bit fraction takes up 39 decimal digits; max reasonable precision */
-#define	MAXFRACT	39
+size_t
+fread(void *buf, size_t size, size_t count, FILE *fp)
+{
+	size_t resid;
+	char *p;
+	int r;
+	size_t total;
+
+	/*
+	 * ANSI and SUSv2 require a return value of 0 if size or count are 0.
+	 */
+	if ((resid = count * size) == 0)
+		return (0);
+	FLOCKFILE(fp);
+	_SET_ORIENTATION(fp, -1);
+	if (fp->_r < 0)
+		fp->_r = 0;
+	total = resid;
+	p = buf;
+	while (resid > (r = fp->_r)) {
+		(void)memcpy((void *)p, (void *)fp->_p, (size_t)r);
+		fp->_p += r;
+		/* fp->_r = 0 ... done in __srefill */
+		p += r;
+		resid -= r;
+		if (__srefill(fp)) {
+			/* no more input: return partial result */
+			FUNLOCKFILE(fp);
+			return ((total - resid) / size);
+		}
+	}
+	(void)memcpy((void *)p, (void *)fp->_p, resid);
+	fp->_r -= resid;
+	fp->_p += resid;
+	FUNLOCKFILE(fp);
+	return (count);
+}
