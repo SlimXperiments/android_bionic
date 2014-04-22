@@ -31,6 +31,9 @@
 #include <errno.h>
 #include <machine/exec.h>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "linker.h"
 #include "linker_debug.h"
@@ -132,11 +135,11 @@ ElfReader::~ElfReader() {
   }
 }
 
-bool ElfReader::Load() {
+bool ElfReader::Load(const android_dlextinfo* extinfo) {
   return ReadElfHeader() &&
          VerifyElfHeader() &&
          ReadProgramHeader() &&
-         ReserveAddressSpace() &&
+         ReserveAddressSpace(extinfo) &&
          LoadSegments() &&
          FindPhdr();
 }
@@ -291,7 +294,7 @@ size_t phdr_table_get_load_size(const ElfW(Phdr)* phdr_table, size_t phdr_count,
 // Reserve a virtual address range big enough to hold all loadable
 // segments of a program header table. This is done by creating a
 // private anonymous mmap() with PROT_NONE.
-bool ElfReader::ReserveAddressSpace() {
+bool ElfReader::ReserveAddressSpace(const android_dlextinfo* extinfo) {
   ElfW(Addr) min_vaddr;
   load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_, &min_vaddr);
   if (load_size_ == 0) {
@@ -300,11 +303,33 @@ bool ElfReader::ReserveAddressSpace() {
   }
 
   uint8_t* addr = reinterpret_cast<uint8_t*>(min_vaddr);
-  int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
-  void* start = mmap(addr, load_size_, PROT_NONE, mmap_flags, -1, 0);
-  if (start == MAP_FAILED) {
-    DL_ERR("couldn't reserve %zd bytes of address space for \"%s\"", load_size_, name_);
-    return false;
+  void* start;
+  size_t reserved_size = 0;
+  bool reserved_hint = true;
+
+  if (extinfo != NULL) {
+    if (extinfo->flags & ANDROID_DLEXT_RESERVED_ADDRESS) {
+      reserved_size = extinfo->reserved_size;
+      reserved_hint = false;
+    } else if (extinfo->flags & ANDROID_DLEXT_RESERVED_ADDRESS_HINT) {
+      reserved_size = extinfo->reserved_size;
+    }
+  }
+
+  if (load_size_ > reserved_size) {
+    if (!reserved_hint) {
+      DL_ERR("reserved address space %zd smaller than %zd bytes needed for \"%s\"",
+             reserved_size - load_size_, load_size_, name_);
+      return false;
+    }
+    int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    start = mmap(addr, load_size_, PROT_NONE, mmap_flags, -1, 0);
+    if (start == MAP_FAILED) {
+      DL_ERR("couldn't reserve %zd bytes of address space for \"%s\"", load_size_, name_);
+      return false;
+    }
+  } else {
+    start = extinfo->reserved_addr;
   }
 
   load_start_ = start;
@@ -500,6 +525,129 @@ static int _phdr_table_set_gnu_relro_prot(const ElfW(Phdr)* phdr_table, size_t p
 int phdr_table_protect_gnu_relro(const ElfW(Phdr)* phdr_table, size_t phdr_count, ElfW(Addr) load_bias) {
   return _phdr_table_set_gnu_relro_prot(phdr_table, phdr_count, load_bias, PROT_READ);
 }
+
+/* Serialize the GNU relro segments to the given file descriptor. This can be
+ * performed after relocations to allow another process to later share the
+ * relocated segment, if it was loaded at the same address.
+ *
+ * Input:
+ *   phdr_table  -> program header table
+ *   phdr_count  -> number of entries in tables
+ *   load_bias   -> load bias
+ *   fd          -> writable file descriptor to use
+ * Return:
+ *   0 on error, -1 on failure (error code in errno).
+ */
+int phdr_table_serialize_gnu_relro(const ElfW(Phdr)* phdr_table, size_t phdr_count, ElfW(Addr) load_bias,
+                                   int fd) {
+  const ElfW(Phdr)* phdr = phdr_table;
+  const ElfW(Phdr)* phdr_limit = phdr + phdr_count;
+  ssize_t file_offset = 0;
+
+  for (phdr = phdr_table; phdr < phdr_limit; phdr++) {
+    if (phdr->p_type != PT_GNU_RELRO) {
+      continue;
+    }
+
+    ElfW(Addr) seg_page_start = PAGE_START(phdr->p_vaddr) + load_bias;
+    ElfW(Addr) seg_page_end   = PAGE_END(phdr->p_vaddr + phdr->p_memsz) + load_bias;
+    ssize_t size = seg_page_end - seg_page_start;
+
+    ssize_t written = TEMP_FAILURE_RETRY(write(fd, reinterpret_cast<void*>(seg_page_start), size));
+    if (written != size) {
+      return -1;
+    }
+    void* map = mmap(reinterpret_cast<void*>(seg_page_start), size, PROT_READ,
+                     MAP_PRIVATE|MAP_FIXED, fd, file_offset);
+    if (map == MAP_FAILED) {
+      return -1;
+    }
+    file_offset += size;
+  }
+  return 0;
+}
+
+/* Where possible, replace the GNU relro segments with mappings of the given
+ * file descriptor. This can be performed after relocations to allow a file
+ * previously created by phdr_table_serialize_gnu_relro in another process to
+ * replace the dirty relocated pages, saving memory, if it was loaded at the
+ * same address. We have to compare the data before we map over it, since some
+ * parts of the relro segment may not be identical due to other libraries in
+ * the process being loaded at different addresses.
+ *
+ * Input:
+ *   phdr_table  -> program header table
+ *   phdr_count  -> number of entries in tables
+ *   load_bias   -> load bias
+ *   fd          -> readable file descriptor to use
+ * Return:
+ *   0 on error, -1 on failure (error code in errno).
+ */
+int phdr_table_map_gnu_relro(const ElfW(Phdr)* phdr_table, size_t phdr_count, ElfW(Addr) load_bias,
+                             int fd) {
+  // Map the file at a temporary location so we can compare its contents.
+  struct stat file_stat;
+  if (TEMP_FAILURE_RETRY(fstat(fd, &file_stat)) != 0) {
+    return -1;
+  }
+  off_t file_size = file_stat.st_size;
+  void* temp_mapping = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  if (temp_mapping == MAP_FAILED) {
+    return -1;
+  }
+  size_t file_offset = 0;
+
+  // Iterate over the relro segments and compare/remap the pages.
+  const ElfW(Phdr)* phdr = phdr_table;
+  const ElfW(Phdr)* phdr_limit = phdr + phdr_count;
+
+  for (phdr = phdr_table; phdr < phdr_limit; phdr++) {
+    if (phdr->p_type != PT_GNU_RELRO) {
+      continue;
+    }
+
+    ElfW(Addr) seg_page_start = PAGE_START(phdr->p_vaddr) + load_bias;
+    ElfW(Addr) seg_page_end   = PAGE_END(phdr->p_vaddr + phdr->p_memsz) + load_bias;
+
+    char* file_base = static_cast<char*>(temp_mapping) + file_offset;
+    char* mem_base = reinterpret_cast<char*>(seg_page_start);
+    size_t match_offset = 0;
+    size_t size = seg_page_end - seg_page_start;
+
+    while (match_offset < size) {
+      // Skip over dissimilar pages.
+      while (match_offset < size &&
+             memcmp(mem_base + match_offset, file_base + match_offset, PAGE_SIZE) != 0) {
+        match_offset += PAGE_SIZE;
+      }
+
+      // Count similar pages.
+      size_t mismatch_offset = match_offset;
+      while (mismatch_offset < size &&
+             memcmp(mem_base + mismatch_offset, file_base + mismatch_offset, PAGE_SIZE) == 0) {
+        mismatch_offset += PAGE_SIZE;
+      }
+
+      // Map over similar pages.
+      if (mismatch_offset > match_offset) {
+        void* map = mmap(mem_base + match_offset, mismatch_offset - match_offset,
+                         PROT_READ, MAP_PRIVATE|MAP_FIXED, fd, match_offset);
+        if (map == MAP_FAILED) {
+          munmap(temp_mapping, file_size);
+          return -1;
+        }
+      }
+
+      match_offset = mismatch_offset;
+    }
+
+    // Add to the base file offset in case there are multiple relro segments.
+    file_offset += size;
+  }
+  munmap(temp_mapping, file_size);
+  return 0;
+}
+
 
 #if defined(__arm__)
 

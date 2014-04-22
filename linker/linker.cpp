@@ -65,7 +65,7 @@
  *   and NOEXEC
  */
 
-static bool soinfo_link_image(soinfo* si);
+static bool soinfo_link_image(soinfo* si, const android_dlextinfo* extinfo);
 static ElfW(Addr) get_elf_exec_load_bias(const ElfW(Ehdr)* elf);
 
 // We can't use malloc(3) in the dynamic linker. We use a linked list of anonymous
@@ -690,7 +690,7 @@ static int open_library(const char* name) {
   return fd;
 }
 
-static soinfo* load_library(const char* name) {
+static soinfo* load_library(const char* name, const android_dlextinfo* extinfo) {
     // Open the file.
     int fd = open_library(name);
     if (fd == -1) {
@@ -700,7 +700,7 @@ static soinfo* load_library(const char* name) {
 
     // Read the ELF header and load the segments.
     ElfReader elf_reader(name, fd);
-    if (!elf_reader.Load()) {
+    if (!elf_reader.Load(extinfo)) {
         return NULL;
     }
 
@@ -735,7 +735,7 @@ static soinfo *find_loaded_library(const char* name) {
     return NULL;
 }
 
-static soinfo* find_library_internal(const char* name) {
+static soinfo* find_library_internal(const char* name, const android_dlextinfo* extinfo) {
   if (name == NULL) {
     return somain;
   }
@@ -750,7 +750,7 @@ static soinfo* find_library_internal(const char* name) {
   }
 
   TRACE("[ '%s' has not been loaded yet.  Locating...]", name);
-  si = load_library(name);
+  si = load_library(name, extinfo);
   if (si == NULL) {
     return NULL;
   }
@@ -760,7 +760,7 @@ static soinfo* find_library_internal(const char* name) {
   TRACE("[ find_library_internal base=%p size=%zu name='%s' ]",
         reinterpret_cast<void*>(si->base), si->size, si->name);
 
-  if (!soinfo_link_image(si)) {
+  if (!soinfo_link_image(si, extinfo)) {
     munmap(reinterpret_cast<void*>(si->base), si->size);
     soinfo_free(si);
     return NULL;
@@ -769,8 +769,8 @@ static soinfo* find_library_internal(const char* name) {
   return si;
 }
 
-static soinfo* find_library(const char* name) {
-  soinfo* si = find_library_internal(name);
+static soinfo* find_library(const char* name, const android_dlextinfo* extinfo) {
+  soinfo* si = find_library_internal(name, extinfo);
   if (si != NULL) {
     si->ref_count++;
   }
@@ -811,13 +811,17 @@ void do_android_update_LD_LIBRARY_PATH(const char* ld_library_path) {
   }
 }
 
-soinfo* do_dlopen(const char* name, int flags) {
+soinfo* do_dlopen(const char* name, int flags, const android_dlextinfo* extinfo) {
   if ((flags & ~(RTLD_NOW|RTLD_LAZY|RTLD_LOCAL|RTLD_GLOBAL)) != 0) {
     DL_ERR("invalid flags to dlopen: %x", flags);
     return NULL;
   }
+  if (extinfo != NULL && ((extinfo->flags & ~(ANDROID_DLEXT_VALID_FLAG_BITS)) != 0)) {
+    DL_ERR("invalid extended flags to android_dlopen_ext: %x", extinfo->flags);
+    return NULL;
+  }
   set_soinfo_pool_protection(PROT_READ | PROT_WRITE);
-  soinfo* si = find_library(name);
+  soinfo* si = find_library(name, extinfo);
   if (si != NULL) {
     si->CallConstructors();
   }
@@ -1562,7 +1566,7 @@ static int nullify_closed_stdio() {
     return return_value;
 }
 
-static bool soinfo_link_image(soinfo* si) {
+static bool soinfo_link_image(soinfo* si, const android_dlextinfo* extinfo) {
     /* "base" might wrap around UINT32_MAX. */
     ElfW(Addr) base = si->load_bias;
     const ElfW(Phdr)* phdr = si->phdr;
@@ -1799,7 +1803,7 @@ static bool soinfo_link_image(soinfo* si) {
         memset(gLdPreloads, 0, sizeof(gLdPreloads));
         size_t preload_count = 0;
         for (size_t i = 0; gLdPreloadNames[i] != NULL; i++) {
-            soinfo* lsi = find_library(gLdPreloadNames[i]);
+            soinfo* lsi = find_library(gLdPreloadNames[i], NULL);
             if (lsi != NULL) {
                 gLdPreloads[preload_count++] = lsi;
             } else {
@@ -1817,7 +1821,7 @@ static bool soinfo_link_image(soinfo* si) {
         if (d->d_tag == DT_NEEDED) {
             const char* library_name = si->strtab + d->d_un.d_val;
             DEBUG("%s needs %s", si->name, library_name);
-            soinfo* lsi = find_library(library_name);
+            soinfo* lsi = find_library(library_name, NULL);
             if (lsi == NULL) {
                 strlcpy(tmp_err_buf, linker_get_error_buffer(), sizeof(tmp_err_buf));
                 DL_ERR("could not load library \"%s\" needed by \"%s\"; caused by %s",
@@ -1900,6 +1904,23 @@ static bool soinfo_link_image(soinfo* si) {
         return false;
     }
 
+    /* Handle serializing/sharing the RELRO segment */
+    if (extinfo && (extinfo->flags & ANDROID_DLEXT_WRITE_RELRO)) {
+      if (phdr_table_serialize_gnu_relro(si->phdr, si->phnum, si->load_bias,
+                                         extinfo->relro_fd) < 0) {
+        DL_ERR("failed serializing GNU RELRO section for \"%s\": %s",
+               si->name, strerror(errno));
+        return false;
+      }
+    } else if (extinfo && (extinfo->flags & ANDROID_DLEXT_USE_RELRO)) {
+      if (phdr_table_map_gnu_relro(si->phdr, si->phnum, si->load_bias,
+                                   extinfo->relro_fd) < 0) {
+        DL_ERR("failed mapping GNU RELRO section for \"%s\": %s",
+               si->name, strerror(errno));
+        return false;
+      }
+    }
+
     notify_gdb_of_load(si);
     return true;
 }
@@ -1925,7 +1946,7 @@ static void add_vdso(KernelArgumentBlock& args __unused) {
   si->flags = 0;
   si->load_bias = get_elf_exec_load_bias(ehdr_vdso);
 
-  soinfo_link_image(si);
+  soinfo_link_image(si, NULL);
 #endif
 }
 
@@ -2053,7 +2074,7 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args, ElfW(
 
     somain = si;
 
-    if (!soinfo_link_image(si)) {
+    if (!soinfo_link_image(si, NULL)) {
         __libc_format_fd(2, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
         exit(EXIT_FAILURE);
     }
@@ -2170,7 +2191,7 @@ extern "C" ElfW(Addr) __linker_init(void* raw_args) {
   linker_so.phnum = elf_hdr->e_phnum;
   linker_so.flags |= FLAG_LINKER;
 
-  if (!soinfo_link_image(&linker_so)) {
+  if (!soinfo_link_image(&linker_so, NULL)) {
     // It would be nice to print an error message, but if the linker
     // can't link itself, there's no guarantee that we'll be able to
     // call write() (because it involves a GOT reference). We may as
