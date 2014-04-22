@@ -164,7 +164,6 @@ int	at_quick_exit(void (*)(void));
 extern __noreturn void quick_exit(int);
 #endif /* __ISO_C_VISIBLE >= 2011 */
 
-#if 1 /* MISSING FROM BIONIC - ENABLED FOR STLPort and libstdc++-v3 */
 /* make STLPort happy */
 extern int      mblen(const char *, size_t);
 extern size_t   mbstowcs(wchar_t *, const char *, size_t);
