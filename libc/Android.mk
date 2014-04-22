@@ -482,9 +482,9 @@ libc_common_c_includes := \
 # $(1): the LOCAL_ variable name
 # $(2): the bionic variable name to pull in
 define patch-up-arch-specific-flags
-$(1)_$(TARGET_ARCH) += $($(2)_$(TARGET_ARCH))
+$(1)_$(TARGET_ARCH) += $$($(2)_$(TARGET_ARCH))
 ifdef TARGET_2ND_ARCH
-$(1)_$(TARGET_2ND_ARCH) += $($(2)_$(TARGET_2ND_ARCH))
+$(1)_$(TARGET_2ND_ARCH) += $$($(2)_$(TARGET_2ND_ARCH))
 endif
 endef
 
