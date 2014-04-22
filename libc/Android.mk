@@ -78,7 +78,6 @@ libc_common_src_files := \
     stdio/snprintf.c\
     stdio/sprintf.c \
     stdlib/atexit.c \
-    stdlib/_Exit.c \
     stdlib/getenv.c \
     stdlib/putenv.c \
     stdlib/quick_exit.c \
