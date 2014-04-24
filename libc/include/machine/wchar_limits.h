@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,17 +26,17 @@
  * SUCH DAMAGE.
  */
 
-#include <stddef.h>
+#ifndef _MACHINE_WCHAR_LIMITS_H_
+#define _MACHINE_WCHAR_LIMITS_H_
 
-extern char** environ;
+/* Both GCC and clang define __WCHAR_MAX__. */
+#define WCHAR_MAX __WCHAR_MAX__
 
-int clearenv(void)
-{
-    char **P = environ;
+/* As of 3.4, clang still doesn't define __WCHAR_MIN__. */
+#if defined(__WCHAR_UNSIGNED__)
+#  define WCHAR_MIN L'\0'
+#else
+#  define WCHAR_MIN (-(WCHAR_MAX) - 1)
+#endif
 
-    if (P != NULL) {
-        for (; *P; ++P)
-            *P = NULL;
-    }
-    return 0;
-}
+#endif /* _MACHINE_WCHAR_LIMITS_H_ */

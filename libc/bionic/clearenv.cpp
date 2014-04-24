@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,10 +25,16 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include <stddef.h>
-#include <inttypes.h>
 
-intmax_t strntoimax(const char *nptr, char **endptr, int base, size_t n)
-{
-  return (intmax_t) strntoumax(nptr, endptr, base, n);
+#include <stdlib.h>
+#include <unistd.h>
+
+int clearenv() {
+  char** e = environ;
+  if (e != NULL) {
+    for (; *e; ++e) {
+      *e = NULL;
+    }
+  }
+  return 0;
 }

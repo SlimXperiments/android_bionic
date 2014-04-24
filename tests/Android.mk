@@ -221,6 +221,7 @@ bionic-unit-tests_shared_libraries_target := \
 
 module := bionic-unit-tests
 module_tag := optional
+multilib := both
 build_type := target
 build_target := NATIVE_TEST
 include $(LOCAL_PATH)/Android.build.mk
@@ -242,6 +243,7 @@ bionic-unit-tests-static_force_static_executable := true
 
 module := bionic-unit-tests-static
 module_tag := optional
+multilib := both
 build_type := target
 build_target := NATIVE_TEST
 include $(LOCAL_PATH)/Android.build.mk
@@ -250,6 +252,9 @@ include $(LOCAL_PATH)/Android.build.mk
 # Tests to run on the host and linked against glibc. Run with:
 #   cd bionic/tests; mm bionic-unit-tests-glibc-run
 # -----------------------------------------------------------------------------
+
+ifeq ($(HOST_OS)-$(HOST_ARCH),linux-x86)
+
 bionic-unit-tests-glibc_whole_static_libraries := \
     libBionicStandardTests \
 
@@ -262,6 +267,14 @@ build_type := host
 build_target := NATIVE_TEST
 include $(LOCAL_PATH)/Android.build.mk
 
+ifneq ($(TARGET_ARCH),$(filter $(TARGET_ARCH),arm mips x86))
+LINKER = linker64
+NATIVE_TEST_SUFFIX=64
+else
+LINKER = linker
+NATIVE_TEST_SUFFIX=32
+endif
+
 # gtest needs ANDROID_DATA/local/tmp for death test output.
 # Make sure to create ANDROID_DATA/local/tmp if doesn't exist.
 # Use the current target out directory as ANDROID_DATA.
@@ -270,18 +283,13 @@ bionic-unit-tests-glibc-run: bionic-unit-tests-glibc
 	mkdir -p $(TARGET_OUT_DATA)/local/tmp
 	ANDROID_DATA=$(TARGET_OUT_DATA) \
 	ANDROID_ROOT=$(TARGET_OUT) \
-		$(HOST_OUT_EXECUTABLES)/bionic-unit-tests-glibc $(BIONIC_TEST_FLAGS)
+		$(HOST_OUT_EXECUTABLES)/bionic-unit-tests-glibc$(NATIVE_TEST_SUFFIX) $(BIONIC_TEST_FLAGS)
 
 # -----------------------------------------------------------------------------
 # Run the unit tests built against x86 bionic on an x86 host.
 # -----------------------------------------------------------------------------
-ifeq ($(HOST_OS)-$(HOST_ARCH),linux-x86)
+
 ifeq ($(TARGET_ARCH),$(filter $(TARGET_ARCH),x86 x86_64))
-ifeq ($(TARGET_ARCH),x86)
-LINKER = linker
-else
-LINKER = linker64
-endif
 # gtest needs ANDROID_DATA/local/tmp for death test output.
 # Make sure to create ANDROID_DATA/local/tmp if doesn't exist.
 # bionic itself should always work relative to ANDROID_DATA or ANDROID_ROOT.
@@ -297,8 +305,9 @@ bionic-unit-tests-run-on-host: bionic-unit-tests $(TARGET_OUT_EXECUTABLES)/$(LIN
 	ANDROID_DATA=$(TARGET_OUT_DATA) \
 	ANDROID_ROOT=$(TARGET_OUT) \
 	LD_LIBRARY_PATH=$(TARGET_OUT_SHARED_LIBRARIES) \
-		$(TARGET_OUT_DATA_NATIVE_TESTS)/bionic-unit-tests/bionic-unit-tests $(BIONIC_TEST_FLAGS)
+		$(TARGET_OUT_DATA_NATIVE_TESTS)/bionic-unit-tests/bionic-unit-tests$(NATIVE_TEST_SUFFIX) $(BIONIC_TEST_FLAGS)
 endif
-endif
+
+endif # linux-x86
 
 endif # !BUILD_TINY_ANDROID

@@ -39,7 +39,6 @@ endif
 libc_common_src_files := \
     bionic/arc4random.c \
     bionic/bindresvport.c \
-    bionic/clearenv.c \
     bionic/daemon.c \
     bionic/err.c \
     bionic/ether_aton.c \
@@ -69,19 +68,13 @@ libc_common_src_files := \
     bionic/sigblock.c \
     bionic/siginterrupt.c \
     bionic/sigsetmask.c \
-    bionic/strntoimax.c \
-    bionic/strntoumax.c \
     bionic/system_properties_compat.c \
-    bionic/time64.c \
     bionic/unlockpt.c \
     stdio/findfp.c \
     stdio/snprintf.c\
     stdio/sprintf.c \
     stdlib/atexit.c \
-    stdlib/getenv.c \
-    stdlib/putenv.c \
     stdlib/quick_exit.c \
-    stdlib/setenv.c \
     unistd/syslog.c \
 
 # Fortify implementations of libc functions.
@@ -114,6 +107,7 @@ libc_bionic_src_files := \
     bionic/brk.cpp \
     bionic/chmod.cpp \
     bionic/chown.cpp \
+    bionic/clearenv.cpp \
     bionic/clock.cpp \
     bionic/clone.cpp \
     bionic/cmsg_nxthdr.cpp \
@@ -406,6 +400,8 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/stdlib/atoi.c \
     upstream-openbsd/lib/libc/stdlib/atol.c \
     upstream-openbsd/lib/libc/stdlib/atoll.c \
+    upstream-openbsd/lib/libc/stdlib/getenv.c \
+    upstream-openbsd/lib/libc/stdlib/setenv.c \
     upstream-openbsd/lib/libc/stdlib/strtoimax.c \
     upstream-openbsd/lib/libc/stdlib/strtol.c \
     upstream-openbsd/lib/libc/stdlib/strtoll.c \
@@ -654,6 +650,7 @@ LOCAL_SRC_FILES_32 := $(libc_upstream_openbsd_gdtoa_src_files_32)
 LOCAL_SRC_FILES_64 := $(libc_upstream_openbsd_gdtoa_src_files_64)
 LOCAL_CFLAGS := \
     $(libc_common_cflags) \
+    -fvisibility=hidden \
     -I$(LOCAL_PATH)/upstream-openbsd/android/include \
     -I$(LOCAL_PATH)/upstream-openbsd/lib/libc/include \
     -include openbsd-compat.h \
