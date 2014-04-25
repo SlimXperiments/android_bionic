@@ -10,3 +10,4 @@ KNOWN ABI BUGS
 
   atexit(3) handlers registered by a shared library aren't called on
   dlclose(3); this only affects ARM. http://b/4998315
+

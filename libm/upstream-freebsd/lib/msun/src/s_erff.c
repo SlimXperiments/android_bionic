@@ -25,7 +25,7 @@ half=  5.0000000000e-01, /* 0x3F000000 */
 one =  1.0000000000e+00, /* 0x3F800000 */
 two =  2.0000000000e+00, /* 0x40000000 */
 /*
- * Coefficients for approximation to  erf on [0,0.84375]
+ * Coefficients for approximation to erf on [0,0.84375]
  */
 efx =  1.2837916613e-01, /* 0x3e0375d4 */
 efx8=  1.0270333290e+00, /* 0x3f8375d4 */

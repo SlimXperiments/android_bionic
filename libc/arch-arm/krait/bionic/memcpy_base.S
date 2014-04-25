@@ -210,3 +210,4 @@ MEMCPY_BASE_ALIGNED:
 	pop	{r0, lr}
 	bx	lr
 END(MEMCPY_BASE)
+
