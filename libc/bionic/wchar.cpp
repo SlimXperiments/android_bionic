@@ -164,16 +164,12 @@ size_t mbrlen(const char* s, size_t n, mbstate_t* /*ps*/) {
 
 size_t mbrtowc(wchar_t* pwc, const char* s, size_t n, mbstate_t* /*ps*/) {
   if (s == NULL) {
-    s   = "";
-    pwc = NULL;
+    return 0;
   }
   if (n == 0) {
-    if (pwc) {
-      *pwc = 0;
-      return 0;
-    }
+    return 0;
   }
-  if (pwc) {
+  if (pwc != NULL) {
     *pwc = *s;
   }
   return (*s != 0);
@@ -294,12 +290,6 @@ long int wcstol(const wchar_t* nptr, wchar_t** endptr, int base) {
 
 unsigned long int wcstoul(const wchar_t* nptr, wchar_t** endptr, int base) {
   return strtoul(reinterpret_cast<const char*>(nptr), reinterpret_cast<char**>(endptr), base);
-}
-
-wchar_t* wcswcs(const wchar_t* ws1, const wchar_t* ws2) {
-  const char* s1 = reinterpret_cast<const char*>(ws1);
-  const char* s2 = reinterpret_cast<const char*>(ws2);
-  return reinterpret_cast<wchar_t*>(strstr(s1, s2));
 }
 
 int wctob(wint_t c) {

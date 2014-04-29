@@ -159,3 +159,56 @@ TEST(wchar, wcstombs_wcrtombs) {
 TEST(wchar, limits) {
   ASSERT_LT(WCHAR_MIN, WCHAR_MAX);
 }
+
+TEST(wchar, wcsstr_wcswcs) {
+  const wchar_t* haystack = L"matches hello world, not the second hello world";
+  const wchar_t* empty_needle = L"";
+  const wchar_t* good_needle = L"ll";
+  const wchar_t* bad_needle = L"wort";
+
+  ASSERT_EQ(haystack, wcsstr(haystack, empty_needle));
+  ASSERT_EQ(&haystack[10], wcsstr(haystack, good_needle));
+  ASSERT_EQ(NULL, wcsstr(haystack, bad_needle));
+
+  ASSERT_EQ(haystack, wcswcs(haystack, empty_needle));
+  ASSERT_EQ(&haystack[10], wcswcs(haystack, good_needle));
+  ASSERT_EQ(NULL, wcswcs(haystack, bad_needle));
+}
+
+TEST(wchar, mbtowc) {
+  wchar_t out[8];
+
+  out[0] = 'x';
+  ASSERT_EQ(0, mbtowc(out, "hello", 0));
+  ASSERT_EQ('x', out[0]);
+
+  ASSERT_EQ(0, mbtowc(out, "hello", 0));
+  ASSERT_EQ(0, mbtowc(out, "", 0));
+  ASSERT_EQ(1, mbtowc(out, "hello", 1));
+  ASSERT_EQ(L'h', out[0]);
+
+  ASSERT_EQ(0, mbtowc(NULL, "hello", 0));
+  ASSERT_EQ(0, mbtowc(NULL, "", 0));
+  ASSERT_EQ(1, mbtowc(NULL, "hello", 1));
+
+  ASSERT_EQ(0, mbtowc(NULL, NULL, 0));
+}
+
+TEST(wchar, mbrtowc) {
+  wchar_t out[8];
+
+  out[0] = 'x';
+  ASSERT_EQ(0U, mbrtowc(out, "hello", 0, NULL));
+  ASSERT_EQ('x', out[0]);
+
+  ASSERT_EQ(0U, mbrtowc(out, "hello", 0, NULL));
+  ASSERT_EQ(0U, mbrtowc(out, "", 0, NULL));
+  ASSERT_EQ(1U, mbrtowc(out, "hello", 1, NULL));
+  ASSERT_EQ(L'h', out[0]);
+
+  ASSERT_EQ(0U, mbrtowc(NULL, "hello", 0, NULL));
+  ASSERT_EQ(0U, mbrtowc(NULL, "", 0, NULL));
+  ASSERT_EQ(1U, mbrtowc(NULL, "hello", 1, NULL));
+
+  ASSERT_EQ(0U, mbrtowc(NULL, NULL, 0, NULL));
+}
