@@ -130,6 +130,8 @@ libc_bionic_src_files := \
     bionic/inotify_init.cpp \
     bionic/lchown.cpp \
     bionic/lfs64_support.cpp \
+    bionic/__libc_current_sigrtmax.cpp \
+    bionic/__libc_current_sigrtmin.cpp \
     bionic/libc_init_common.cpp \
     bionic/libc_logging.cpp \
     bionic/libgen.cpp \
@@ -233,6 +235,7 @@ libc_upstream_freebsd_src_files := \
     upstream-freebsd/lib/libc/stdlib/labs.c \
     upstream-freebsd/lib/libc/stdlib/llabs.c \
     upstream-freebsd/lib/libc/stdlib/qsort.c \
+    upstream-freebsd/lib/libc/stdlib/quick_exit.c \
     upstream-freebsd/lib/libc/stdlib/realpath.c \
     upstream-freebsd/lib/libc/string/wcpcpy.c \
     upstream-freebsd/lib/libc/string/wcpncpy.c \
