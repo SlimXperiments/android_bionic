@@ -1,5 +1,5 @@
-/*	$OpenBSD: wcio.h,v 1.2 2013/04/17 17:40:35 tedu Exp $	*/
-/* $NetBSD: wcio.h,v 1.3 2003/01/18 11:30:00 thorpej Exp $ */
+/*	$OpenBSD: fwide.c,v 1.4 2009/11/09 00:18:27 kurt Exp $	*/
+/* $NetBSD: fwide.c,v 1.2 2003/01/18 11:29:54 thorpej Exp $ */
 
 /*-
  * Copyright (c)2001 Citrus Project,
@@ -29,53 +29,36 @@
  * $Citrus$
  */
 
-#ifndef _WCIO_H_
-#define _WCIO_H_
+#include <stdio.h>
+#include <wchar.h>
+#include "local.h"
 
-/* minimal requirement of SUSv2 */
-#define WCIO_UNGETWC_BUFSIZE 1
+int
+fwide(FILE *fp, int mode)
+{
+	struct wchar_io_data *wcio;
 
-struct wchar_io_data {
-	mbstate_t wcio_mbstate_in;
-	mbstate_t wcio_mbstate_out;
+	/*
+	 * this implementation use only -1, 0, 1
+	 * for mode value.
+	 * (we don't need to do this, but
+	 *  this can make things simpler.)
+	 */
+	if (mode > 0)
+		mode = 1;
+	else if (mode < 0)
+		mode = -1;
 
-	wchar_t wcio_ungetwc_buf[WCIO_UNGETWC_BUFSIZE];
-	size_t wcio_ungetwc_inbuf;
+	FLOCKFILE(fp);
+	wcio = WCIO_GET(fp);
+	if (!wcio)
+		return 0; /* XXX */
 
-	int wcio_mode; /* orientation */
-};
+	if (wcio->wcio_mode == 0 && mode != 0)
+		wcio->wcio_mode = mode;
+	else
+		mode = wcio->wcio_mode;
+	FUNLOCKFILE(fp);
 
-#define WCIO_GET(fp) \
-	(_EXT(fp) ? &(_EXT(fp)->_wcio) : (struct wchar_io_data *)0)
-
-#define _SET_ORIENTATION(fp, mode) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio && _wcio->wcio_mode == 0) \
-		_wcio->wcio_mode = (mode);\
-} while (0)
-
-/*
- * WCIO_FREE should be called by fclose
- */
-#define WCIO_FREE(fp) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio) { \
-		_wcio->wcio_mode = 0;\
-		_wcio->wcio_ungetwc_inbuf = 0;\
-	} \
-} while (0)
-
-#define WCIO_FREEUB(fp) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio) { \
-		_wcio->wcio_ungetwc_inbuf = 0;\
-	} \
-} while (0)
-
-#define WCIO_INIT(fp) \
-	memset(&(_EXT(fp)->_wcio), 0, sizeof(struct wchar_io_data))
-
-#endif /*_WCIO_H_*/
+	return mode;
+}

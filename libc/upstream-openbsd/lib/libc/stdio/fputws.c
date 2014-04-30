@@ -1,8 +1,8 @@
-/*	$OpenBSD: wcio.h,v 1.2 2013/04/17 17:40:35 tedu Exp $	*/
-/* $NetBSD: wcio.h,v 1.3 2003/01/18 11:30:00 thorpej Exp $ */
+/*	$OpenBSD: fputws.c,v 1.6 2013/04/17 17:40:35 tedu Exp $	*/
+/* $NetBSD: fputws.c,v 1.1 2003/03/07 07:11:37 tshiozak Exp $ */
 
 /*-
- * Copyright (c)2001 Citrus Project,
+ * Copyright (c) 2002 Tim J. Robbins.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,56 +26,33 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Citrus$
+ * Original version ID:
+ * FreeBSD: src/lib/libc/stdio/fputws.c,v 1.4 2002/09/20 13:25:40 tjr Exp
  */
 
-#ifndef _WCIO_H_
-#define _WCIO_H_
+#include <errno.h>
+#include <stdio.h>
+#include <wchar.h>
+#include "local.h"
 
-/* minimal requirement of SUSv2 */
-#define WCIO_UNGETWC_BUFSIZE 1
+wint_t __fputwc_unlock(wchar_t wc, FILE *fp);
 
-struct wchar_io_data {
-	mbstate_t wcio_mbstate_in;
-	mbstate_t wcio_mbstate_out;
+int
+fputws(ws, fp)
+	const wchar_t * __restrict ws;
+	FILE * __restrict fp;
+{
+	FLOCKFILE(fp);
+	_SET_ORIENTATION(fp, 1);
 
-	wchar_t wcio_ungetwc_buf[WCIO_UNGETWC_BUFSIZE];
-	size_t wcio_ungetwc_inbuf;
+	while (*ws != '\0') {
+		if (__fputwc_unlock(*ws++, fp) == WEOF) {
+			FUNLOCKFILE(fp);
+			return (-1);
+		}
+	}
 
-	int wcio_mode; /* orientation */
-};
+	FUNLOCKFILE(fp);
 
-#define WCIO_GET(fp) \
-	(_EXT(fp) ? &(_EXT(fp)->_wcio) : (struct wchar_io_data *)0)
-
-#define _SET_ORIENTATION(fp, mode) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio && _wcio->wcio_mode == 0) \
-		_wcio->wcio_mode = (mode);\
-} while (0)
-
-/*
- * WCIO_FREE should be called by fclose
- */
-#define WCIO_FREE(fp) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio) { \
-		_wcio->wcio_mode = 0;\
-		_wcio->wcio_ungetwc_inbuf = 0;\
-	} \
-} while (0)
-
-#define WCIO_FREEUB(fp) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio) { \
-		_wcio->wcio_ungetwc_inbuf = 0;\
-	} \
-} while (0)
-
-#define WCIO_INIT(fp) \
-	memset(&(_EXT(fp)->_wcio), 0, sizeof(struct wchar_io_data))
-
-#endif /*_WCIO_H_*/
+	return (0);
+}

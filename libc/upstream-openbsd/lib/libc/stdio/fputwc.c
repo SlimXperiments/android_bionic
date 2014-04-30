@@ -1,5 +1,5 @@
-/*	$OpenBSD: wcio.h,v 1.2 2013/04/17 17:40:35 tedu Exp $	*/
-/* $NetBSD: wcio.h,v 1.3 2003/01/18 11:30:00 thorpej Exp $ */
+/*	$OpenBSD: fputwc.c,v 1.4 2009/11/09 00:18:27 kurt Exp $	*/
+/* $NetBSD: fputwc.c,v 1.3 2003/03/07 07:11:37 tshiozak Exp $ */
 
 /*-
  * Copyright (c)2001 Citrus Project,
@@ -29,53 +29,60 @@
  * $Citrus$
  */
 
-#ifndef _WCIO_H_
-#define _WCIO_H_
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <wchar.h>
+#include "local.h"
+#include "fvwrite.h"
 
-/* minimal requirement of SUSv2 */
-#define WCIO_UNGETWC_BUFSIZE 1
+wint_t
+__fputwc_unlock(wchar_t wc, FILE *fp)
+{
+	struct wchar_io_data *wcio;
+	mbstate_t *st;
+	size_t size;
+	char buf[MB_LEN_MAX];
+	struct __suio uio;
+	struct __siov iov;
 
-struct wchar_io_data {
-	mbstate_t wcio_mbstate_in;
-	mbstate_t wcio_mbstate_out;
+	/* LINTED we don't play with buf */
+	iov.iov_base = (void *)buf;
+	uio.uio_iov = &iov;
+	uio.uio_iovcnt = 1;
 
-	wchar_t wcio_ungetwc_buf[WCIO_UNGETWC_BUFSIZE];
-	size_t wcio_ungetwc_inbuf;
+	_SET_ORIENTATION(fp, 1);
+	wcio = WCIO_GET(fp);
+	if (wcio == 0) {
+		errno = ENOMEM;
+		return WEOF;
+	}
 
-	int wcio_mode; /* orientation */
-};
+	wcio->wcio_ungetwc_inbuf = 0;
+	st = &wcio->wcio_mbstate_out;
 
-#define WCIO_GET(fp) \
-	(_EXT(fp) ? &(_EXT(fp)->_wcio) : (struct wchar_io_data *)0)
+	size = wcrtomb(buf, wc, st);
+	if (size == (size_t)-1) {
+		errno = EILSEQ;
+		return WEOF;
+	}
 
-#define _SET_ORIENTATION(fp, mode) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio && _wcio->wcio_mode == 0) \
-		_wcio->wcio_mode = (mode);\
-} while (0)
+	uio.uio_resid = iov.iov_len = size;
+	if (__sfvwrite(fp, &uio)) {
+		return WEOF;
+	}
 
-/*
- * WCIO_FREE should be called by fclose
- */
-#define WCIO_FREE(fp) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio) { \
-		_wcio->wcio_mode = 0;\
-		_wcio->wcio_ungetwc_inbuf = 0;\
-	} \
-} while (0)
+	return (wint_t)wc;
+}
 
-#define WCIO_FREEUB(fp) \
-do {\
-	struct wchar_io_data *_wcio = WCIO_GET(fp); \
-	if (_wcio) { \
-		_wcio->wcio_ungetwc_inbuf = 0;\
-	} \
-} while (0)
+wint_t
+fputwc(wchar_t wc, FILE *fp)
+{
+	wint_t r;
 
-#define WCIO_INIT(fp) \
-	memset(&(_EXT(fp)->_wcio), 0, sizeof(struct wchar_io_data))
+	FLOCKFILE(fp);
+	r = __fputwc_unlock(wc, fp);
+	FUNLOCKFILE(fp);
 
-#endif /*_WCIO_H_*/
+	return (r);
+}
