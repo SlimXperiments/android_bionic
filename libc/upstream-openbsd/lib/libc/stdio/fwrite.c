@@ -1,4 +1,4 @@
-/*	$OpenBSD: fread.c,v 1.12 2014/05/01 16:40:36 deraadt Exp $ */
+/*	$OpenBSD: fwrite.c,v 1.11 2014/05/01 16:40:36 deraadt Exp $ */
 /*-
  * Copyright (c) 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -32,20 +32,25 @@
  */
 
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
 #include "local.h"
+#include "fvwrite.h"
 
 #define MUL_NO_OVERFLOW	(1UL << (sizeof(size_t) * 4))
 
+/*
+ * Write `count' objects (each size `size') from memory to the given file.
+ * Return the number of whole objects written.
+ */
 size_t
-fread(void *buf, size_t size, size_t count, FILE *fp)
+fwrite(const void *buf, size_t size, size_t count, FILE *fp)
 {
-	size_t resid;
-	char *p;
-	int r;
-	size_t total;
+	size_t n;
+	struct __suio uio;
+	struct __siov iov;
+	int ret;
 
 	/*
 	 * Extension:  Catch integer overflow
@@ -60,29 +65,24 @@ fread(void *buf, size_t size, size_t count, FILE *fp)
 	/*
 	 * ANSI and SUSv2 require a return value of 0 if size or count are 0.
 	 */
-	if ((resid = count * size) == 0)
+	if ((n = count * size) == 0)
 		return (0);
+
+	iov.iov_base = (void *)buf;
+	uio.uio_resid = iov.iov_len = n;
+	uio.uio_iov = &iov;
+	uio.uio_iovcnt = 1;
+
+	/*
+	 * The usual case is success (__sfvwrite returns 0);
+	 * skip the divide if this happens, since divides are
+	 * generally slow and since this occurs whenever size==0.
+	 */
 	FLOCKFILE(fp);
 	_SET_ORIENTATION(fp, -1);
-	if (fp->_r < 0)
-		fp->_r = 0;
-	total = resid;
-	p = buf;
-	while (resid > (r = fp->_r)) {
-		(void)memcpy((void *)p, (void *)fp->_p, (size_t)r);
-		fp->_p += r;
-		/* fp->_r = 0 ... done in __srefill */
-		p += r;
-		resid -= r;
-		if (__srefill(fp)) {
-			/* no more input: return partial result */
-			FUNLOCKFILE(fp);
-			return ((total - resid) / size);
-		}
-	}
-	(void)memcpy((void *)p, (void *)fp->_p, resid);
-	fp->_r -= resid;
-	fp->_p += resid;
+	ret = __sfvwrite(fp, &uio);
 	FUNLOCKFILE(fp);
-	return (count);
+	if (ret == 0)
+		return (count);
+	return ((n - uio.uio_resid) / size);
 }

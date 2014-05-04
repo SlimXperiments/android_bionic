@@ -215,6 +215,7 @@ libc_bionic_src_files := \
     bionic/utimes.cpp \
     bionic/wait.cpp \
     bionic/wchar.cpp \
+    bionic/wctype.cpp \
 
 libc_upstream_freebsd_src_files := \
     upstream-freebsd/lib/libc/gen/ldexp.c \
@@ -223,7 +224,6 @@ libc_upstream_freebsd_src_files := \
     upstream-freebsd/lib/libc/stdio/fclose.c \
     upstream-freebsd/lib/libc/stdio/flags.c \
     upstream-freebsd/lib/libc/stdio/fopen.c \
-    upstream-freebsd/lib/libc/stdio/fwrite.c \
     upstream-freebsd/lib/libc/stdio/makebuf.c \
     upstream-freebsd/lib/libc/stdio/mktemp.c \
     upstream-freebsd/lib/libc/stdio/setvbuf.c \
@@ -357,6 +357,7 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/locale/wcstoumax.c \
     upstream-openbsd/lib/libc/locale/wcsxfrm.c \
     upstream-openbsd/lib/libc/locale/wctob.c \
+    upstream-openbsd/lib/libc/locale/wctomb.c \
     upstream-openbsd/lib/libc/stdio/asprintf.c \
     upstream-openbsd/lib/libc/stdio/clrerr.c \
     upstream-openbsd/lib/libc/stdio/fdopen.c \
@@ -387,6 +388,7 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/stdio/fwalk.c \
     upstream-openbsd/lib/libc/stdio/fwide.c \
     upstream-openbsd/lib/libc/stdio/fwprintf.c \
+    upstream-openbsd/lib/libc/stdio/fwrite.c \
     upstream-openbsd/lib/libc/stdio/fwscanf.c \
     upstream-openbsd/lib/libc/stdio/getc.c \
     upstream-openbsd/lib/libc/stdio/getchar.c \
@@ -553,6 +555,8 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(call all-c-files-under,tzcode)
+# tzcode doesn't include wcsftime, so we use the OpenBSD one.
+LOCAL_SRC_FILES += upstream-openbsd/lib/libc/time/wcsftime.c
 
 LOCAL_CFLAGS := $(libc_common_cflags)
 # Don't use ridiculous amounts of stack.
@@ -568,7 +572,7 @@ LOCAL_CFLAGS += -DUSG_COMPAT=1
 
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
-LOCAL_C_INCLUDES := $(libc_common_c_includes)
+LOCAL_C_INCLUDES := $(libc_common_c_includes) $(LOCAL_PATH)/tzcode/
 LOCAL_MODULE := libc_tzcode
 LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
 LOCAL_SYSTEM_SHARED_LIBRARIES :=
@@ -670,6 +674,7 @@ LOCAL_CFLAGS := \
     $(libc_common_cflags) \
     -I$(LOCAL_PATH)/upstream-openbsd/android/include \
     -I$(LOCAL_PATH)/upstream-openbsd/lib/libc/include \
+    -I$(LOCAL_PATH)/upstream-openbsd/lib/libc/gdtoa/ \
     -include openbsd-compat.h
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
