@@ -220,11 +220,16 @@ TEST(stdio, snprintf_ls) {
 }
 
 TEST(stdio, snprintf_n) {
+#if !defined(__GLIBC__)
+  // http://b/14492135
   char buf[32];
-  int i = 0;
-  EXPECT_EQ(4, snprintf(buf, sizeof(buf), "a %n b", &i));
-  EXPECT_EQ(2, i);
-  EXPECT_STREQ("a  b", buf);
+  int i = 1234;
+  EXPECT_EQ(5, snprintf(buf, sizeof(buf), "a %n b", &i));
+  EXPECT_EQ(1234, i);
+  EXPECT_STREQ("a n b", buf);
+#else
+  GTEST_LOG_(INFO) << "This test does nothing.\n";
+#endif
 }
 
 TEST(stdio, snprintf_smoke) {
@@ -435,4 +440,46 @@ TEST(stdio, sscanf) {
   ASSERT_STREQ("hello", s1);
   ASSERT_EQ(123, i1);
   ASSERT_DOUBLE_EQ(1.23, d1);
+}
+
+TEST(stdio, cantwrite_EBADF) {
+  // If we open a file read-only...
+  FILE* fp = fopen("/proc/version", "r");
+
+  // ...all attempts to write to that file should return failure.
+
+  // They should also set errno to EBADF. This isn't POSIX, but it's traditional.
+  // glibc gets the wide-character functions wrong.
+
+  errno = 0;
+  EXPECT_EQ(EOF, putc('x', fp));
+  EXPECT_EQ(EBADF, errno);
+
+  errno = 0;
+  EXPECT_EQ(EOF, fprintf(fp, "hello"));
+  EXPECT_EQ(EBADF, errno);
+
+  errno = 0;
+  EXPECT_EQ(EOF, fwprintf(fp, L"hello"));
+#if !defined(__GLIBC__)
+  EXPECT_EQ(EBADF, errno);
+#endif
+
+  errno = 0;
+  EXPECT_EQ(EOF, putw(1234, fp));
+  EXPECT_EQ(EBADF, errno);
+
+  errno = 0;
+  EXPECT_EQ(0U, fwrite("hello", 1, 2, fp));
+  EXPECT_EQ(EBADF, errno);
+
+  errno = 0;
+  EXPECT_EQ(EOF, fputs("hello", fp));
+  EXPECT_EQ(EBADF, errno);
+
+  errno = 0;
+  EXPECT_EQ(WEOF, fputwc(L'x', fp));
+#if !defined(__GLIBC__)
+  EXPECT_EQ(EBADF, errno);
+#endif
 }

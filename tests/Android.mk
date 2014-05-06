@@ -198,13 +198,40 @@ include $(LOCAL_PATH)/Android.build.mk
 endif
 
 # -----------------------------------------------------------------------------
-# Library used by dlext tests.
+# Library used by dlext tests - with/without GNU RELRO program header
 # -----------------------------------------------------------------------------
 libdlext_test_src_files := \
     dlext_test_library.cpp \
 
+libdlext_test_ldflags := \
+    -Wl,-z,relro \
+
 module := libdlext_test
 module_tag := optional
+build_type := target
+build_target := SHARED_LIBRARY
+include $(LOCAL_PATH)/Android.build.mk
+
+libdlext_test_norelro_src_files := \
+    dlext_test_library.cpp \
+
+libdlext_test_norelro_ldflags := \
+    -Wl,-z,norelro \
+
+module := libdlext_test_norelro
+module_tag := optional
+build_type := target
+build_target := SHARED_LIBRARY
+include $(LOCAL_PATH)/Android.build.mk
+
+# -----------------------------------------------------------------------------
+# This library used by atexit tests
+# -----------------------------------------------------------------------------
+
+libtest_atexit_src_files := \
+    atexit_testlib.cpp
+
+module := libtest_atexit
 build_type := target
 build_target := SHARED_LIBRARY
 include $(LOCAL_PATH)/Android.build.mk
@@ -217,6 +244,7 @@ bionic-unit-tests_whole_static_libraries := \
     libBionicTests \
 
 bionic-unit-tests_src_files := \
+    atexit_test.cpp \
     dlext_test.cpp \
     dlfcn_test.cpp \
 
@@ -263,11 +291,14 @@ include $(LOCAL_PATH)/Android.build.mk
 
 ifeq ($(HOST_OS)-$(HOST_ARCH),linux-x86)
 
+bionic-unit-tests-glibc_src_files := \
+    atexit_test.cpp \
+
 bionic-unit-tests-glibc_whole_static_libraries := \
     libBionicStandardTests \
 
 bionic-unit-tests-glibc_ldlibs := \
-    -lrt \
+    -lrt -ldl \
 
 module := bionic-unit-tests-glibc
 module_tag := optional
