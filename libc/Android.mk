@@ -74,7 +74,6 @@ libc_common_src_files := \
     stdio/snprintf.c\
     stdio/sprintf.c \
     stdlib/atexit.c \
-    stdlib/quick_exit.c \
     unistd/syslog.c \
 
 # Fortify implementations of libc functions.
