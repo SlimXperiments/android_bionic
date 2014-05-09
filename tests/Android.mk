@@ -212,6 +212,19 @@ build_type := target
 build_target := SHARED_LIBRARY
 include $(LOCAL_PATH)/Android.build.mk
 
+# -----------------------------------------------------------------------------
+# create symlink to libdlext_test.so for symlink test
+# -----------------------------------------------------------------------------
+libdlext_origin := $(LOCAL_INSTALLED_MODULE)
+libdlext_sym := $(subst libdlext_test,libdlext_test_v2,$(libdlext_origin))
+$(libdlext_sym): $(libdlext_origin)
+	@echo "Symlink: $@ -> $(notdir $<)"
+	@mkdir -p $(dir $@)
+	$(hide) ln -sf $(notdir $<) $@
+
+ALL_MODULES := \
+  $(ALL_MODULES) $(libdlext_sym)
+
 libdlext_test_norelro_src_files := \
     dlext_test_library.cpp \
 
@@ -225,7 +238,7 @@ build_target := SHARED_LIBRARY
 include $(LOCAL_PATH)/Android.build.mk
 
 # -----------------------------------------------------------------------------
-# This library used by atexit tests
+# Library used by atexit tests
 # -----------------------------------------------------------------------------
 
 libtest_atexit_src_files := \
@@ -247,6 +260,9 @@ bionic-unit-tests_src_files := \
     atexit_test.cpp \
     dlext_test.cpp \
     dlfcn_test.cpp \
+
+bionic-unit-tests_cppflags := \
+    $(test_cppflags)
 
 bionic-unit-tests_ldflags := \
     -Wl,--export-dynamic \
@@ -304,8 +320,12 @@ bionic-unit-tests-glibc_whole_static_libraries := \
 bionic-unit-tests-glibc_ldlibs := \
     -lrt -ldl \
 
+bionic-unit-tests-glibc_cppflags := \
+    $(test_cppflags)
+
 module := bionic-unit-tests-glibc
 module_tag := optional
+bionic-unit-tests-glibc_multilib := both
 build_type := host
 build_target := NATIVE_TEST
 include $(LOCAL_PATH)/Android.build.mk
