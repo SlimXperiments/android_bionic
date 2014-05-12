@@ -6,9 +6,12 @@ ENTRY(__bionic_clone)
         pushl   %esi
         pushl   %edi
 
-        # Align child stack.
-        movl    20(%esp), %ecx
-        andl    $~15, %ecx
+        # Load system call arguments into registers.
+        movl    16(%esp), %ebx   # flags
+        movl    20(%esp), %ecx   # child_stack
+        movl    24(%esp), %edx   # parent_tid
+        movl    28(%esp), %esi   # tls
+        movl    32(%esp), %edi   # child_tid
 
         # Copy 'fn' and 'arg' onto the child stack
         movl    36(%esp), %eax   # Read 'fn'.
@@ -19,17 +22,12 @@ ENTRY(__bionic_clone)
 
         # Make the system call.
         movl    $__NR_clone, %eax
-        movl    16(%esp), %ebx  # flags
-        #movl   %ecx, %ecx      # child stack (already there)
-        movl    24(%esp), %edx  # parent_tid
-        movl    28(%esp), %esi  # tls
-        movl    32(%esp), %edi  # child_tid
         int     $0x80
 
         # Check result.
         cmpl    $0, %eax
-        je      bc_child
-        jg      bc_parent
+        je      .L_bc_child
+        jg      .L_bc_parent
 
         # An error occurred, so set errno and return -1.
         negl    %eax
@@ -37,15 +35,15 @@ ENTRY(__bionic_clone)
         call    __set_errno
         addl    $4, %esp
         orl     $-1, %eax
-        jmp     bc_return
+        jmp     .L_bc_return
 
-bc_child:
+.L_bc_child:
         call    __bionic_clone_entry
         hlt
 
-bc_parent:
+.L_bc_parent:
         # we're the parent; nothing to do.
-bc_return:
+.L_bc_return:
         popl    %edi
         popl    %esi
         popl    %ebx
