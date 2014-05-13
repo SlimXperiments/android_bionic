@@ -24,6 +24,8 @@ libc_common_src_files_arm += \
     upstream-freebsd/lib/libc/string/wmemcmp.c \
     upstream-openbsd/lib/libc/string/strlcpy.c \
     upstream-openbsd/lib/libc/string/strncpy.c \
+    upstream-openbsd/lib/libc/string/stpcpy.c \
+    upstream-openbsd/lib/libc/string/stpncpy.c \
 
 # cortex-a9 without neon
 ifneq ($(TARGET_CPU_VARIANT),tegra2)
