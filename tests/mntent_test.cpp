@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,19 @@
 
 #include <gtest/gtest.h>
 
-#include <sys/types.h>
-#include <regex.h>
+#include <mntent.h>
 
-TEST(regex, smoke) {
-  // A quick test of all the regex functions.
-  regex_t re;
-  ASSERT_EQ(0, regcomp(&re, "ab*c", 0));
-  ASSERT_EQ(0, regexec(&re, "abbbc", 0, NULL, 0));
-  ASSERT_EQ(REG_NOMATCH, regexec(&re, "foo", 0, NULL, 0));
+TEST(mntent, mntent_smoke) {
+  FILE* fp = setmntent("/no/mnt/tab/on/android", "r");
+  ASSERT_TRUE(fp == NULL);
 
-  char buf[80];
-  regerror(REG_NOMATCH, &re, buf, sizeof(buf));
-#if defined(__BIONIC__)
-  ASSERT_STREQ("regexec() failed to match", buf);
-#else
-  ASSERT_STREQ("No match", buf);
+#if __BIONIC__ // glibc doesn't let you call getmntent/getmntent_r with a NULL FILE*.
+  ASSERT_TRUE(getmntent(fp) == NULL);
+
+  struct mntent mbuf;
+  char cbuf[32];
+  ASSERT_TRUE(getmntent_r(fp, &mbuf, cbuf, sizeof(cbuf)) == NULL);
 #endif
 
-  regfree(&re);
+  ASSERT_EQ(1, endmntent(fp));
 }

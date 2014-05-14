@@ -110,6 +110,7 @@ libc_bionic_src_files := \
     bionic/clock.cpp \
     bionic/clone.cpp \
     bionic/cmsg_nxthdr.cpp \
+    bionic/connect.cpp \
     bionic/dirent.cpp \
     bionic/dup2.cpp \
     bionic/epoll_create.cpp \
@@ -140,6 +141,8 @@ libc_bionic_src_files := \
     bionic/mkdir.cpp \
     bionic/mkfifo.cpp \
     bionic/mknod.cpp \
+    bionic/mntent.cpp \
+    bionic/NetdClientDispatch.cpp \
     bionic/open.cpp \
     bionic/pause.cpp \
     bionic/pipe.cpp \
@@ -256,7 +259,6 @@ libc_upstream_freebsd_src_files := \
 
 libc_upstream_netbsd_src_files := \
     upstream-netbsd/common/lib/libc/hash/sha1/sha1.c \
-    upstream-netbsd/common/lib/libc/inet/inet_addr.c \
     upstream-netbsd/lib/libc/gen/ftw.c \
     upstream-netbsd/lib/libc/gen/nftw.c \
     upstream-netbsd/lib/libc/gen/nice.c \
@@ -265,9 +267,7 @@ libc_upstream_netbsd_src_files := \
     upstream-netbsd/lib/libc/gen/setjmperr.c \
     upstream-netbsd/lib/libc/gen/utime.c \
     upstream-netbsd/lib/libc/gen/utmp.c \
-    upstream-netbsd/lib/libc/inet/inet_ntoa.c \
     upstream-netbsd/lib/libc/inet/inet_ntop.c \
-    upstream-netbsd/lib/libc/inet/inet_pton.c \
     upstream-netbsd/lib/libc/isc/ev_streams.c \
     upstream-netbsd/lib/libc/isc/ev_timers.c \
     upstream-netbsd/lib/libc/regex/regcomp.c \
@@ -356,6 +356,17 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/locale/wcsxfrm.c \
     upstream-openbsd/lib/libc/locale/wctob.c \
     upstream-openbsd/lib/libc/locale/wctomb.c \
+    upstream-openbsd/lib/libc/net/htonl.c \
+    upstream-openbsd/lib/libc/net/htons.c \
+    upstream-openbsd/lib/libc/net/inet_addr.c \
+    upstream-openbsd/lib/libc/net/inet_lnaof.c \
+    upstream-openbsd/lib/libc/net/inet_makeaddr.c \
+    upstream-openbsd/lib/libc/net/inet_netof.c \
+    upstream-openbsd/lib/libc/net/inet_network.c \
+    upstream-openbsd/lib/libc/net/inet_ntoa.c \
+    upstream-openbsd/lib/libc/net/inet_pton.c \
+    upstream-openbsd/lib/libc/net/ntohl.c \
+    upstream-openbsd/lib/libc/net/ntohs.c \
     upstream-openbsd/lib/libc/stdio/asprintf.c \
     upstream-openbsd/lib/libc/stdio/clrerr.c \
     upstream-openbsd/lib/libc/stdio/fdopen.c \
@@ -725,7 +736,10 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(libc_bionic_src_files)
-LOCAL_CFLAGS := $(libc_common_cflags) -Werror
+LOCAL_CFLAGS := $(libc_common_cflags) \
+    -Werror \
+    -Wframe-larger-than=2048 \
+
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
 LOCAL_C_INCLUDES := $(libc_common_c_includes)
@@ -877,6 +891,7 @@ LOCAL_SRC_FILES := \
     bionic/debug_stacktrace.cpp \
     bionic/pthread_debug.cpp \
     bionic/libc_init_dynamic.cpp \
+    bionic/NetdClient.cpp \
 
 LOCAL_MODULE := libc
 LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)

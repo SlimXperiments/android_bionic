@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,15 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
+#ifndef PRIVATE_NETD_CLIENT_H
+#define PRIVATE_NETD_CLIENT_H
 
-#include <sys/types.h>
-#include <regex.h>
+#include <sys/socket.h>
 
-TEST(regex, smoke) {
-  // A quick test of all the regex functions.
-  regex_t re;
-  ASSERT_EQ(0, regcomp(&re, "ab*c", 0));
-  ASSERT_EQ(0, regexec(&re, "abbbc", 0, NULL, 0));
-  ASSERT_EQ(REG_NOMATCH, regexec(&re, "foo", 0, NULL, 0));
+struct NetdClientDispatch {
+    int (*connect)(int, const sockaddr*, socklen_t);
+};
 
-  char buf[80];
-  regerror(REG_NOMATCH, &re, buf, sizeof(buf));
-#if defined(__BIONIC__)
-  ASSERT_STREQ("regexec() failed to match", buf);
-#else
-  ASSERT_STREQ("No match", buf);
-#endif
+extern NetdClientDispatch __netdClientDispatch;
 
-  regfree(&re);
-}
+#endif  // PRIVATE_NETD_CLIENT_H

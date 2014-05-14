@@ -44,6 +44,7 @@ test_cppflags = \
     -std=gnu++11 \
 
 libBionicStandardTests_src_files := \
+    arpa_inet_test.cpp \
     buffer_tests.cpp \
     ctype_test.cpp \
     dirent_test.cpp \
@@ -59,6 +60,7 @@ libBionicStandardTests_src_files := \
     locale_test.cpp \
     malloc_test.cpp \
     math_test.cpp \
+    mntent_test.cpp \
     netdb_test.cpp \
     pthread_test.cpp \
     regex_test.cpp \

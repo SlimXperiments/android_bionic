@@ -25,29 +25,24 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef _ARPA_INET_H_
-#define _ARPA_INET_H_
 
-#include <stdint.h>
-#include <sys/types.h>
-#include <netinet/in.h>
+#include <mntent.h>
 
-__BEGIN_DECLS
+mntent* getmntent(FILE*) {
+  return NULL;
+}
 
-typedef uint32_t in_addr_t;
+mntent* getmntent_r(FILE*, struct mntent*, char*, int) {
+  return NULL;
+}
 
-in_addr_t inet_addr(const char*);
-int inet_aton(const char*, struct in_addr*);
-in_addr_t inet_lnaof(struct in_addr);
-struct in_addr inet_makeaddr(in_addr_t, in_addr_t);
-in_addr_t inet_netof(struct in_addr);
-in_addr_t inet_network(const char*);
-char* inet_ntoa(struct in_addr);
-const char* inet_ntop(int, const void*, char*, socklen_t);
-unsigned int inet_nsap_addr(const char*, unsigned char*, int);
-char* inet_nsap_ntoa(int, const unsigned char*, char*);
-int inet_pton(int, const char*, void*);
+FILE* setmntent(const char* path, const char* mode) {
+  return fopen(path, mode);
+}
 
-__END_DECLS
-
-#endif /* _ARPA_INET_H_ */
+int endmntent(FILE* fp) {
+  if (fp != NULL) {
+    fclose(fp);
+  }
+  return 1;
+}
