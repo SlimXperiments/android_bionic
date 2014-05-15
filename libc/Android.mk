@@ -98,6 +98,7 @@ libc_common_src_files += \
 
 libc_bionic_src_files := \
     bionic/abort.cpp \
+    bionic/accept.cpp \
     bionic/access.cpp \
     bionic/assert.cpp \
     bionic/atof.cpp \
@@ -747,10 +748,6 @@ LOCAL_MODULE := libc_bionic
 LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
 LOCAL_SYSTEM_SHARED_LIBRARIES :=
 
-# Set -DPTHREAD_DEBUG_ENABLED=true to enable support for pthread deadlock prediction.
-# Since this code is experimental it is disabled by default.
-LOCAL_CFLAGS += -DPTHREAD_DEBUG_ENABLED=false
-
 ifneq ($(TARGET_USES_LOGD),false)
 LOCAL_CFLAGS += -DTARGET_USES_LOGD
 endif
@@ -889,7 +886,6 @@ LOCAL_SRC_FILES := \
     bionic/malloc_debug_common.cpp \
     bionic/debug_mapinfo.cpp \
     bionic/debug_stacktrace.cpp \
-    bionic/pthread_debug.cpp \
     bionic/libc_init_dynamic.cpp \
     bionic/NetdClient.cpp \
 

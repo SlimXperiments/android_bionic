@@ -506,37 +506,41 @@ tzload(register const char* name, register struct state* const sp,
     if (doextend && nread > 2 &&
         up->buf[0] == '\n' && up->buf[nread - 1] == '\n' &&
         sp->typecnt + 2 <= TZ_MAX_TYPES) {
-            struct state ts;
+            struct state * ts = malloc(sizeof *ts);
             register int result;
 
+            if (ts == NULL)
+                goto oops;
+
             up->buf[nread - 1] = '\0';
-            result = tzparse(&up->buf[1], &ts, FALSE);
-            if (result == 0 && ts.typecnt == 2 &&
-                sp->charcnt + ts.charcnt <= TZ_MAX_CHARS) {
+            result = tzparse(&up->buf[1], ts, FALSE);
+            if (result == 0 && ts->typecnt == 2 &&
+                sp->charcnt + ts->charcnt <= TZ_MAX_CHARS) {
                     for (i = 0; i < 2; ++i)
-                        ts.ttis[i].tt_abbrind +=
+                        ts->ttis[i].tt_abbrind +=
                             sp->charcnt;
-                    for (i = 0; i < ts.charcnt; ++i)
+                    for (i = 0; i < ts->charcnt; ++i)
                         sp->chars[sp->charcnt++] =
-                            ts.chars[i];
+                            ts->chars[i];
                     i = 0;
-                    while (i < ts.timecnt &&
-                        ts.ats[i] <=
+                    while (i < ts->timecnt &&
+                        ts->ats[i] <=
                         sp->ats[sp->timecnt - 1])
                             ++i;
-                    while (i < ts.timecnt &&
+                    while (i < ts->timecnt &&
                         sp->timecnt < TZ_MAX_TIMES) {
                         sp->ats[sp->timecnt] =
-                            ts.ats[i];
+                            ts->ats[i];
                         sp->types[sp->timecnt] =
                             sp->typecnt +
-                            ts.types[i];
+                            ts->types[i];
                         ++sp->timecnt;
                         ++i;
                     }
-                    sp->ttis[sp->typecnt++] = ts.ttis[0];
-                    sp->ttis[sp->typecnt++] = ts.ttis[1];
+                    sp->ttis[sp->typecnt++] = ts->ttis[0];
+                    sp->ttis[sp->typecnt++] = ts->ttis[1];
             }
+            free(ts);
     }
     if (sp->timecnt > 1) {
         for (i = 1; i < sp->timecnt; ++i)
@@ -2255,12 +2259,12 @@ static int __bionic_tzload_cached(const char* name, struct state* const sp, cons
   _tzLock();
 
   // Our single-item cache.
-  static char* gCachedTimeZoneName;
-  static struct state gCachedTimeZone;
+  static char* g_cached_time_zone_name;
+  static struct state g_cached_time_zone;
 
   // Do we already have this timezone cached?
-  if (gCachedTimeZoneName != NULL && strcmp(name, gCachedTimeZoneName) == 0) {
-    *sp = gCachedTimeZone;
+  if (g_cached_time_zone_name != NULL && strcmp(name, g_cached_time_zone_name) == 0) {
+    *sp = g_cached_time_zone;
     _tzUnlock();
     return 0;
   }
@@ -2269,9 +2273,9 @@ static int __bionic_tzload_cached(const char* name, struct state* const sp, cons
   int rc = tzload(name, sp, doextend);
   if (rc == 0) {
     // Update the cache.
-    free(gCachedTimeZoneName);
-    gCachedTimeZoneName = strdup(name);
-    gCachedTimeZone = *sp;
+    free(g_cached_time_zone_name);
+    g_cached_time_zone_name = strdup(name);
+    g_cached_time_zone = *sp;
   }
 
   _tzUnlock();
@@ -2280,22 +2284,33 @@ static int __bionic_tzload_cached(const char* name, struct state* const sp, cons
 
 // Non-standard API: mktime(3) but with an explicit timezone parameter.
 time_t mktime_tz(struct tm* const tmp, const char* tz) {
-  struct state st;
-  if (__bionic_tzload_cached(tz, &st, TRUE) != 0) {
+  struct state* st = malloc(sizeof(*st));
+  time_t return_value;
+
+  if (st == NULL)
+    return 0;
+  if (__bionic_tzload_cached(tz, st, TRUE) != 0) {
     // TODO: not sure what's best here, but for now, we fall back to gmt.
-    gmtload(&st);
+    gmtload(st);
   }
-  return time1(tmp, localsub, 0L, &st);
+
+  return_value = time1(tmp, localsub, 0L, st);
+  free(st);
+  return return_value;
 }
 
 // Non-standard API: localtime(3) but with an explicit timezone parameter.
 void localtime_tz(const time_t* const timep, struct tm* tmp, const char* tz) {
-  struct state st;
-  if (__bionic_tzload_cached(tz, &st, TRUE) != 0) {
+  struct state* st = malloc(sizeof(*st));
+
+  if (st == NULL)
+    return;
+  if (__bionic_tzload_cached(tz, st, TRUE) != 0) {
     // TODO: not sure what's best here, but for now, we fall back to gmt.
-    gmtload(&st);
+    gmtload(st);
   }
-  localsub(timep, 0L, tmp, &st);
+  localsub(timep, 0L, tmp, st);
+  free(st);
 }
 
 // END android-added
