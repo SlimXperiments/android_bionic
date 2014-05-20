@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,10 @@
  * limitations under the License.
  */
 
-#include <typeinfo>
-#include <stdlib.h>
+#include "private/NetdClientDispatch.h"
 
-type_info::type_info() {
-}
+#include <sys/socket.h>
 
-type_info::~type_info() {
-}
-
-char const* type_info::name() const {
-  return "N/A";
-}
-
-bool type_info::operator==(type_info const& /*rhs*/) const {
-  return false;
-}
-
-bool type_info::operator!=(type_info const& /*rhs*/) const {
-  return false;
-}
-
-bool type_info::before(type_info const& /*rhs*/) const {
-  return false;
-}
-
-type_info::type_info(type_info const& /*rhs*/) {
+int socket(int domain, int type, int protocol) {
+    return __netdClientDispatch.socket(domain, type, protocol);
 }

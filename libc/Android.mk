@@ -98,6 +98,7 @@ libc_common_src_files += \
 libc_bionic_src_files := \
     bionic/abort.cpp \
     bionic/accept.cpp \
+    bionic/accept4.cpp \
     bionic/access.cpp \
     bionic/assert.cpp \
     bionic/atof.cpp \
@@ -199,6 +200,7 @@ libc_bionic_src_files := \
     bionic/sigprocmask.cpp \
     bionic/sigsuspend.cpp \
     bionic/sigwait.cpp \
+    bionic/socket.cpp \
     bionic/stat.cpp \
     bionic/statvfs.cpp \
     bionic/strerror.cpp \
@@ -215,7 +217,6 @@ libc_bionic_src_files := \
     bionic/termios.cpp \
     bionic/thread_atexit.cpp \
     bionic/tmpfile.cpp \
-    bionic/typeinfo.cpp \
     bionic/umount.cpp \
     bionic/unlink.cpp \
     bionic/utimes.cpp \
@@ -269,7 +270,6 @@ libc_upstream_netbsd_src_files := \
     upstream-netbsd/lib/libc/gen/setjmperr.c \
     upstream-netbsd/lib/libc/gen/utime.c \
     upstream-netbsd/lib/libc/gen/utmp.c \
-    upstream-netbsd/lib/libc/inet/inet_ntop.c \
     upstream-netbsd/lib/libc/isc/ev_streams.c \
     upstream-netbsd/lib/libc/isc/ev_timers.c \
     upstream-netbsd/lib/libc/regex/regcomp.c \
@@ -365,6 +365,7 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/net/inet_netof.c \
     upstream-openbsd/lib/libc/net/inet_network.c \
     upstream-openbsd/lib/libc/net/inet_ntoa.c \
+    upstream-openbsd/lib/libc/net/inet_ntop.c \
     upstream-openbsd/lib/libc/net/inet_pton.c \
     upstream-openbsd/lib/libc/net/ntohl.c \
     upstream-openbsd/lib/libc/net/ntohs.c \
