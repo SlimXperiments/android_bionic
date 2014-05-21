@@ -12,6 +12,6 @@ ifeq ($(ARCH_ARM_HAVE_NEON),true)
     libc_bionic_src_files_arm += arch-arm/bionic/memmove.S
 else
     libc_bionic_src_files_arm += \
-        bionic/memmove.c.arm
-        string/bcopy.c.arm
+        bionic/memmove.c \
+        upstream-openbsd/lib/libc/string/bcopy.c
 endif
