@@ -26,11 +26,12 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/cdefs.h>
 #include <asm/prctl.h>
 #include <stdint.h>
 
 extern int __arch_prctl(int, unsigned long);
 
-int __set_tls(void* ptr) {
+__LIBC_HIDDEN__ int __set_tls(void* ptr) {
   return __arch_prctl(ARCH_SET_FS, (uintptr_t) ptr);
 }

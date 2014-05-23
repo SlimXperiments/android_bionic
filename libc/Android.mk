@@ -43,7 +43,6 @@ libc_common_src_files := \
     bionic/err.c \
     bionic/ether_aton.c \
     bionic/ether_ntoa.c \
-    bionic/fdprintf.c \
     bionic/ftime.c \
     bionic/fts.c \
     bionic/getdtablesize.c \
@@ -371,6 +370,7 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/net/ntohs.c \
     upstream-openbsd/lib/libc/stdio/asprintf.c \
     upstream-openbsd/lib/libc/stdio/clrerr.c \
+    upstream-openbsd/lib/libc/stdio/dprintf.c \
     upstream-openbsd/lib/libc/stdio/fdopen.c \
     upstream-openbsd/lib/libc/stdio/feof.c \
     upstream-openbsd/lib/libc/stdio/ferror.c \
@@ -435,6 +435,7 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/stdio/ungetc.c \
     upstream-openbsd/lib/libc/stdio/ungetwc.c \
     upstream-openbsd/lib/libc/stdio/vasprintf.c \
+    upstream-openbsd/lib/libc/stdio/vdprintf.c \
     upstream-openbsd/lib/libc/stdio/vfprintf.c \
     upstream-openbsd/lib/libc/stdio/vfscanf.c \
     upstream-openbsd/lib/libc/stdio/vfwprintf.c \
@@ -498,6 +499,16 @@ ifeq ($(strip $(DEBUG_BIONIC_LIBC)),true)
   libc_common_cflags += -DDEBUG
 endif
 
+ifeq ($(MALLOC_IMPL),jemalloc)
+  libc_common_cflags += -DUSE_JEMALLOC
+
+  libc_malloc_src := bionic/jemalloc.cpp
+else
+  libc_common_cflags += -DUSE_DLMALLOC
+
+  libc_malloc_src := bionic/dlmalloc.c
+endif
+
 # To customize dlmalloc's alignment, set BOARD_MALLOC_ALIGNMENT in
 # the appropriate BoardConfig.mk file.
 #
@@ -525,6 +536,10 @@ libc_common_cppflags := \
 libc_common_c_includes := \
     $(LOCAL_PATH)/stdlib  \
     $(LOCAL_PATH)/stdio   \
+
+ifeq ($(MALLOC_IMPL),jemalloc)
+  libc_common_c_includes += external/jemalloc/include
+endif
 
 # ========================================================
 # Add in the arch-specific flags.
@@ -812,6 +827,11 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libc_syscalls \
     libc_tzcode \
 
+ifeq ($(MALLOC_IMPL),jemalloc)
+LOCAL_WHOLE_STATIC_LIBRARIES += \
+    libjemalloc
+endif
+
 LOCAL_SYSTEM_SHARED_LIBRARIES :=
 
 # TODO: split out the asflags.
@@ -866,7 +886,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := \
     $(libc_arch_static_src_files) \
     $(libc_static_common_src_files) \
-    bionic/dlmalloc.c \
+    $(libc_malloc_src) \
     bionic/malloc_debug_common.cpp \
     bionic/libc_init_static.cpp \
 
@@ -896,11 +916,10 @@ LOCAL_CFLAGS := $(libc_common_cflags) -Werror
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
 LOCAL_C_INCLUDES := $(libc_common_c_includes)
-
 LOCAL_SRC_FILES := \
     $(libc_arch_dynamic_src_files) \
     $(libc_static_common_src_files) \
-    bionic/dlmalloc.c \
+    $(libc_malloc_src) \
     bionic/malloc_debug_common.cpp \
     bionic/debug_mapinfo.cpp \
     bionic/debug_stacktrace.cpp \

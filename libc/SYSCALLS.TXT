@@ -58,7 +58,6 @@ int     setresgid:setresgid32(gid_t, gid_t, gid_t)   arm,x86
 int     setresgid:setresgid(gid_t, gid_t, gid_t)     arm64,mips,mips64,x86_64
 void*   __brk:brk(void*)           all
 int     kill(pid_t, int)           all
-int     tkill(pid_t tid, int sig)  all
 int     tgkill(pid_t tgid, pid_t tid, int sig)  all
 int     __ptrace:ptrace(int request, int pid, void* addr, void* data)  all
 
@@ -291,7 +290,6 @@ int ioprio_get(int which, int who) all
 int     uname(struct utsname*)  all
 mode_t  umask(mode_t)  all
 int     __reboot:reboot(int, int, int, void*)  all
-int     __syslog:syslog(int, char*, int)  all
 int     init_module(void*, unsigned long, const char*)  all
 int     delete_module(const char*, unsigned int)   all
 int     klogctl:syslog(int, char*, int)   all
@@ -306,8 +304,6 @@ int eventfd:eventfd2(unsigned int, int)  all
 
 void _exit|_Exit:exit_group(int)  all
 void __exit:exit(int)  all
-
-int futex(void*, int, int, void*, void*, int)  all
 
 int inotify_init1(int)  all
 int inotify_add_watch(int, const char*, unsigned int)  all
