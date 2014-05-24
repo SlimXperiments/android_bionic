@@ -362,6 +362,11 @@ __END_DECLS
 #define	fwopen(cookie, fn) funopen(cookie, 0, fn, 0, 0)
 #endif /* __BSD_VISIBLE */
 
+__BEGIN_DECLS
+int __srget(FILE*);
+int __swbuf(int, FILE*);
+__END_DECLS
+
 #if defined(__BIONIC_FORTIFY)
 
 __BEGIN_DECLS
