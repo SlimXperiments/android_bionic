@@ -104,6 +104,10 @@ extern int __sdidinit;
 #define NO_PRINTF_PERCENT_N
 
 /* OpenBSD exposes these in <stdio.h>, but we only want them exposed to the implementation. */
+__BEGIN_DECLS
+int __srget(FILE*);
+int __swbuf(int, FILE*);
+__END_DECLS
 #define __sfeof(p)     (((p)->_flags & __SEOF) != 0)
 #define __sferror(p)   (((p)->_flags & __SERR) != 0)
 #define __sclearerr(p) ((void)((p)->_flags &= ~(__SERR|__SEOF)))
