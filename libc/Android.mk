@@ -54,7 +54,6 @@ libc_common_src_files := \
     bionic/initgroups.c \
     bionic/ioctl.c \
     bionic/isatty.c \
-    bionic/issetugid.c \
     bionic/md5.c \
     bionic/memmem.c \
     bionic/pathconf.c \
@@ -256,7 +255,6 @@ libc_upstream_freebsd_src_files := \
     upstream-freebsd/lib/libc/string/wcstok.c \
     upstream-freebsd/lib/libc/string/wmemchr.c \
     upstream-freebsd/lib/libc/string/wmemcpy.c \
-    upstream-freebsd/lib/libc/string/wmemmove.c \
     upstream-freebsd/lib/libc/string/wmemset.c \
 
 libc_upstream_netbsd_src_files := \
