@@ -103,6 +103,8 @@ libc_bionic_src_files := \
     bionic/__bionic_name_mem.cpp \
     bionic/bionic_time_conversions.cpp \
     bionic/brk.cpp \
+    bionic/c16rtomb.cpp \
+    bionic/c32rtomb.cpp \
     bionic/chmod.cpp \
     bionic/chown.cpp \
     bionic/clearenv.cpp \
@@ -128,6 +130,7 @@ libc_bionic_src_files := \
     bionic/getauxval.cpp \
     bionic/getcwd.cpp \
     bionic/getpgrp.cpp \
+    bionic/gettid.cpp \
     bionic/inotify_init.cpp \
     bionic/lchown.cpp \
     bionic/lfs64_support.cpp \
@@ -139,6 +142,9 @@ libc_bionic_src_files := \
     bionic/link.cpp \
     bionic/locale.cpp \
     bionic/lstat.cpp \
+    bionic/mbrtoc16.cpp \
+    bionic/mbrtoc32.cpp \
+    bionic/mbstate.cpp \
     bionic/mkdir.cpp \
     bionic/mkfifo.cpp \
     bionic/mknod.cpp \
@@ -475,7 +481,6 @@ libc_upstream_openbsd_src_files := \
     upstream-openbsd/lib/libc/string/strtok.c \
     upstream-openbsd/lib/libc/string/wcslcpy.c \
     upstream-openbsd/lib/libc/string/wcsstr.c \
-    upstream-openbsd/lib/libc/string/wcswcs.c \
     upstream-openbsd/lib/libc/string/wcswidth.c \
 
 libc_arch_static_src_files := \
@@ -485,7 +490,7 @@ libc_arch_static_src_files := \
 # ========================================================
 libc_common_cflags := \
     -D_LIBC=1 \
-    -Wall -Wextra \
+    -Wall -Wextra -Wunused \
 
 # Try to catch typical 32-bit assumptions that break with 64-bit pointers.
 libc_common_cflags += \
@@ -499,11 +504,9 @@ endif
 
 ifeq ($(MALLOC_IMPL),jemalloc)
   libc_common_cflags += -DUSE_JEMALLOC
-
   libc_malloc_src := bionic/jemalloc.cpp
 else
   libc_common_cflags += -DUSE_DLMALLOC
-
   libc_malloc_src := bionic/dlmalloc.c
 endif
 
@@ -708,7 +711,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(libc_upstream_openbsd_src_files)
 LOCAL_CFLAGS := \
     $(libc_common_cflags) \
-    -Wno-sign-compare -Wno-uninitialized \
+    -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter \
     -Werror \
     -I$(LOCAL_PATH)/upstream-openbsd/android/include \
     -I$(LOCAL_PATH)/upstream-openbsd/lib/libc/include \
@@ -819,6 +822,7 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libc_dns \
     libc_freebsd \
     libc_gdtoa \
+    libc_malloc \
     libc_netbsd \
     libc_openbsd \
     libc_stack_protector \
@@ -826,8 +830,7 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libc_tzcode \
 
 ifeq ($(MALLOC_IMPL),jemalloc)
-LOCAL_WHOLE_STATIC_LIBRARIES += \
-    libjemalloc
+LOCAL_WHOLE_STATIC_LIBRARIES += libjemalloc
 endif
 
 LOCAL_SYSTEM_SHARED_LIBRARIES :=
@@ -877,6 +880,24 @@ include $(BUILD_STATIC_LIBRARY)
 
 
 # ========================================================
+# libc_malloc.a: the _prefixed_ malloc functions (like dlcalloc).
+# ========================================================
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := $(libc_malloc_src)
+LOCAL_CFLAGS := $(libc_common_cflags) \
+    -Werror \
+    -fvisibility=hidden \
+
+LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
+LOCAL_CPPFLAGS := $(libc_common_cppflags)
+LOCAL_C_INCLUDES := $(libc_common_c_includes)
+LOCAL_MODULE := libc_malloc
+LOCAL_ADDITIONAL_DEPENDENCIES := $(libc_common_additional_dependencies)
+include $(BUILD_STATIC_LIBRARY)
+
+
+# ========================================================
 # libc.a
 # ========================================================
 include $(CLEAR_VARS)
@@ -884,7 +905,6 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := \
     $(libc_arch_static_src_files) \
     $(libc_static_common_src_files) \
-    $(libc_malloc_src) \
     bionic/malloc_debug_common.cpp \
     bionic/libc_init_static.cpp \
 
@@ -917,7 +937,6 @@ LOCAL_C_INCLUDES := $(libc_common_c_includes)
 LOCAL_SRC_FILES := \
     $(libc_arch_dynamic_src_files) \
     $(libc_static_common_src_files) \
-    $(libc_malloc_src) \
     bionic/malloc_debug_common.cpp \
     bionic/debug_mapinfo.cpp \
     bionic/debug_stacktrace.cpp \

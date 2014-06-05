@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,33 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef LIBC_INIT_COMMON_H
-#define LIBC_INIT_COMMON_H
 
-#include <sys/cdefs.h>
+#include "private/bionic_mbstate.h"
 
-typedef struct {
-  void (**preinit_array)(void);
-  void (**init_array)(void);
-  void (**fini_array)(void);
-} structors_array_t;
+#include <errno.h>
 
-__BEGIN_DECLS
+__LIBC_HIDDEN__ size_t mbstate_bytes_so_far(const mbstate_t* ps) {
+  return
+    (ps->__seq[2] != 0) ? 3 :
+    (ps->__seq[1] != 0) ? 2 :
+    (ps->__seq[0] != 0) ? 1 : 0;
+}
 
-extern int main(int argc, char** argv, char** env);
+__LIBC_HIDDEN__ void mbstate_set_byte(mbstate_t* ps, int i, char byte) {
+  ps->__seq[i] = static_cast<uint8_t>(byte);
+}
 
-__noreturn void __libc_init(void* raw_args,
-                            void (*onexit)(void),
-                            int (*slingshot)(int, char**, char**),
-                            structors_array_t const* const structors);
-__LIBC_HIDDEN__ void __libc_fini(void* finit_array);
+__LIBC_HIDDEN__ uint8_t mbstate_get_byte(const mbstate_t* ps, int n) {
+  return ps->__seq[n];
+}
 
-__END_DECLS
+__LIBC_HIDDEN__ size_t reset_and_return_illegal(int _errno, mbstate_t* ps) {
+  errno = _errno;
+  *(reinterpret_cast<uint32_t*>(ps->__seq)) = 0;
+  return __MB_ERR_ILLEGAL_SEQUENCE;
+}
 
-#if defined(__cplusplus)
-class KernelArgumentBlock;
-__LIBC_HIDDEN__ void __libc_init_common(KernelArgumentBlock& args);
-#endif
-
-#endif
+__LIBC_HIDDEN__ size_t reset_and_return(int _return, mbstate_t* ps) {
+  *(reinterpret_cast<uint32_t*>(ps->__seq)) = 0;
+  return _return;
+}

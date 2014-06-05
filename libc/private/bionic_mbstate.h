@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,16 +26,29 @@
  * SUCH DAMAGE.
  */
 
-#include <private/bionic_asm.h>
+#ifndef _BIONIC_MBSTATE_H
+#define _BIONIC_MBSTATE_H
+
+#include <wchar.h>
+
+__BEGIN_DECLS
 
 /*
- * void bzero(void *s, size_t n);
+ * These return values are specified by POSIX for multibyte conversion
+ * functions.
  */
-LEAF(bzero,0)
-	SETUP_GP64(t0,bzero)
-	move	a2,a1
-	move	a1,zero
-	LA	t9,memset
-	RESTORE_GP64
-	j	t9
-END(bzero)
+#define __MB_ERR_ILLEGAL_SEQUENCE static_cast<size_t>(-1)
+#define __MB_ERR_INCOMPLETE_SEQUENCE static_cast<size_t>(-2)
+
+#define __MB_IS_ERR(rv) (rv == __MB_ERR_ILLEGAL_SEQUENCE || \
+                         rv == __MB_ERR_INCOMPLETE_SEQUENCE)
+
+size_t mbstate_bytes_so_far(const mbstate_t* ps);
+void mbstate_set_byte(mbstate_t* ps, int i, char byte);
+uint8_t mbstate_get_byte(const mbstate_t* ps, int n);
+size_t reset_and_return_illegal(int _errno, mbstate_t* ps);
+size_t reset_and_return(int _return, mbstate_t* ps);
+
+__END_DECLS
+
+#endif // _BIONIC_MBSTATE_H

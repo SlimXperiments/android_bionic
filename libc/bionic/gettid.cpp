@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef LIBC_INIT_COMMON_H
-#define LIBC_INIT_COMMON_H
 
-#include <sys/cdefs.h>
+#include <unistd.h>
 
-typedef struct {
-  void (**preinit_array)(void);
-  void (**init_array)(void);
-  void (**fini_array)(void);
-} structors_array_t;
+#include "pthread_internal.h"
 
-__BEGIN_DECLS
-
-extern int main(int argc, char** argv, char** env);
-
-__noreturn void __libc_init(void* raw_args,
-                            void (*onexit)(void),
-                            int (*slingshot)(int, char**, char**),
-                            structors_array_t const* const structors);
-__LIBC_HIDDEN__ void __libc_fini(void* finit_array);
-
-__END_DECLS
-
-#if defined(__cplusplus)
-class KernelArgumentBlock;
-__LIBC_HIDDEN__ void __libc_init_common(KernelArgumentBlock& args);
-#endif
-
-#endif
+pid_t gettid() {
+  return __get_thread()->tid;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,29 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef LIBC_INIT_COMMON_H
-#define LIBC_INIT_COMMON_H
+
+#ifndef _UCHAR_H_
+#define _UCHAR_H_
 
 #include <sys/cdefs.h>
-
-typedef struct {
-  void (**preinit_array)(void);
-  void (**init_array)(void);
-  void (**fini_array)(void);
-} structors_array_t;
+#include <wchar.h>
 
 __BEGIN_DECLS
 
-extern int main(int argc, char** argv, char** env);
+#define __STD_UTF_16__ 1
+#define __STD_UTF_32__ 1
 
-__noreturn void __libc_init(void* raw_args,
-                            void (*onexit)(void),
-                            int (*slingshot)(int, char**, char**),
-                            structors_array_t const* const structors);
-__LIBC_HIDDEN__ void __libc_fini(void* finit_array);
+size_t c16rtomb(char* __restrict, char16_t, mbstate_t* __restrict);
+size_t c32rtomb(char* __restrict, char32_t, mbstate_t* __restrict);
+size_t mbrtoc16(char16_t* __restrict,
+                const char* __restrict,
+                size_t,
+                mbstate_t* __restrict);
+size_t mbrtoc32(char32_t* __restrict,
+                const char* __restrict,
+                size_t,
+                mbstate_t* __restrict);
 
 __END_DECLS
 
-#if defined(__cplusplus)
-class KernelArgumentBlock;
-__LIBC_HIDDEN__ void __libc_init_common(KernelArgumentBlock& args);
-#endif
-
-#endif
+#endif /* _UCHAR_H_ */

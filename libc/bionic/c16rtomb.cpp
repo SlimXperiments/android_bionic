@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,43 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef LIBC_INIT_COMMON_H
-#define LIBC_INIT_COMMON_H
 
-#include <sys/cdefs.h>
+#include <errno.h>
+#include <uchar.h>
+#include <wchar.h>
 
-typedef struct {
-  void (**preinit_array)(void);
-  void (**init_array)(void);
-  void (**fini_array)(void);
-} structors_array_t;
+#include "private/bionic_mbstate.h"
 
-__BEGIN_DECLS
+static inline constexpr bool is_high_surrogate(char16_t c16) {
+  return c16 >= 0xd800 && c16 < 0xdc00;
+}
 
-extern int main(int argc, char** argv, char** env);
+static inline constexpr bool is_low_surrogate(char16_t c16) {
+  return c16 >= 0xdc00 && c16 < 0xe000;
+}
 
-__noreturn void __libc_init(void* raw_args,
-                            void (*onexit)(void),
-                            int (*slingshot)(int, char**, char**),
-                            structors_array_t const* const structors);
-__LIBC_HIDDEN__ void __libc_fini(void* finit_array);
+size_t c16rtomb(char* s, char16_t c16, mbstate_t* ps) {
+  static mbstate_t __private_state;
+  mbstate_t* state = (ps == NULL) ? &__private_state : ps;
+  if (mbsinit(state)) {
+    if (is_high_surrogate(c16)) {
+      char32_t c32 = (c16 & ~0xd800) << 10;
+      mbstate_set_byte(state, 3, (c32 & 0xff0000) >> 16);
+      mbstate_set_byte(state, 2, (c32 & 0x00ff00) >> 8);
+      return 0;
+    } else if (is_low_surrogate(c16)) {
+      return reset_and_return_illegal(EINVAL, state);
+    } else {
+      return c32rtomb(s, static_cast<char32_t>(c16), state);
+    }
+  } else {
+    if (!is_low_surrogate(c16)) {
+      return reset_and_return_illegal(EINVAL, state);
+    }
 
-__END_DECLS
-
-#if defined(__cplusplus)
-class KernelArgumentBlock;
-__LIBC_HIDDEN__ void __libc_init_common(KernelArgumentBlock& args);
-#endif
-
-#endif
+    char32_t c32 = ((mbstate_get_byte(state, 3) << 16) |
+                    (mbstate_get_byte(state, 2) << 8) |
+                    (c16 & ~0xdc00)) + 0x10000;
+    return reset_and_return(c32rtomb(s, c32, NULL), state);
+  }
+}
